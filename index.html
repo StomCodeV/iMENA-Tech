@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iMENA Tech — Building a Smarter Digital Future</title>
+    <style>
+        /* --- RESET & BASE --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #05050A;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* --- FIXED 3D CANVAS (BACKGROUND) --- */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none; /* Allow scrolling through */
+        }
+
+        /* --- SCROLLABLE CONTENT (OVERLAY) --- */
+        .content {
+            position: relative;
+            z-index: 10;
+            pointer-events: none; /* Let scroll pass, but buttons need pointer */
+        }
+        .content section {
+            pointer-events: none;
+        }
+        .content section *:not(.no-click) {
+            pointer-events: none;
+        }
+        .content .btn, .content .nav-link {
+            pointer-events: auto;
+        }
+
+        /* --- SECTIONS --- */
+        .section {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hero Section */
+        #hero {
+            justify-content: flex-end;
+            padding-bottom: 15vh;
+        }
+        #hero h1 {
+            font-size: clamp(3rem, 10vw, 7rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, #00f0ff 0%, #7a2bff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(0, 240, 255, 0.2);
+            letter-spacing: -0.02em;
+        }
+        #hero .tagline {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 1rem;
+            letter-spacing: 0.3em;
+        }
+        #hero .sub-tagline {
+            font-size: clamp(0.8rem, 1.2vw, 1rem);
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 0.5rem;
+            max-width: 600px;
+        }
+
+        /* Services Section */
+        #services {
+            justify-content: center;
+            gap: 2rem;
+        }
+        #services h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        #services h2 span {
+            background: linear-gradient(135deg, #00f0ff, #7a2bff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 2rem;
+            max-width: 900px;
+            width: 100%;
+            pointer-events: none;
+        }
+        .service-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 2rem 1.5rem;
+            border-radius: 20px;
+            transition: all 0.4s ease;
+            pointer-events: auto;
+            cursor: default;
+        }
+        .service-card:hover {
+            transform: translateY(-10px);
+            background: rgba(0, 240, 255, 0.05);
+            border-color: rgba(0, 240, 255, 0.2);
+            box-shadow: 0 20px 40px -10px rgba(0, 240, 255, 0.1);
+        }
+        .service-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .service-card h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+        .service-card p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Footer / Contact */
+        #contact {
+            justify-content: flex-start;
+            padding-top: 15vh;
+        }
+        #contact .brand {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00f0ff, #7a2bff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #contact p {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.9rem;
+            max-width: 400px;
+            margin-top: 0.5rem;
+        }
+
+        /* Scroll Progress */
+        #scroll-progress {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            width: 200px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        #scroll-progress .bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00f0ff, #7a2bff);
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        }
+
+        /* Scroll hint */
+        .scroll-hint {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            animation: bounce 2s infinite;
+            pointer-events: none;
+        }
+        @keyframes bounce {
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            50% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .service-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+            .service-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D CANVAS CONTAINER -->
+    <div id="canvas-container"></div>
+
+    <!-- SCROLL PROGRESS BAR -->
+    <div id="scroll-progress">
+        <div class="bar" id="scrollBar"></div>
+    </div>
+
+    <!-- SCROLL HINT -->
+    <div class="scroll-hint" id="scrollHint">SCROLL TO EXPLORE</div>
+
+    <!-- OVERLAY CONTENT -->
+    <div class="content">
+        <section id="hero" class="section visible">
+            <h1>iMENA TECH</h1>
+            <div class="tagline">DIGITAL SOLUTIONS</div>
+            <div class="sub-tagline">Websites · WebApps · Systems · AI</div>
+        </section>
+
+        <section id="services" class="section">
+            <h2>What we <span>build</span></h2>
+            <div class="service-grid">
+                <div class="service-card">
+                    <div class="icon">🌐</div>
+                    <h3>Websites</h3>
+                    <p>Fast, responsive, 3D-enabled</p>
+                </div>
+                <div class="service-card">
+                    <div class="icon">📱</div>
+                    <h3>WebApps</h3>
+                    <p>School portals & dashboards</p>
+                </div>
+                <div class="service-card">
+                    <div class="icon">⚙️</div>
+                    <h3>Systems</h3>
+                    <p>Admin & management tools</p>
+                </div>
+                <div class="service-card">
+                    <div class="icon">🧠</div>
+                    <h3>AI Solutions</h3>
+                    <p>Smart assistants & automation</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="section">
+            <div class="brand">iMENA Tech</div>
+            <p>Building a smarter digital future for Africa.<br>Part of the iMENA Hub ecosystem.</p>
+            <p style="margin-top: 2rem; font-size: 0.7rem;">© 2026 · Designed & Developed by iMENA Tech</p>
+        </section>
+    </div>
+
+    <!-- THREE.JS CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
+
+    <!-- MAIN 3D SCRIPT -->
+    <script>
+        // --- INITIALIZATION ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x05050A);
+
+        // Camera
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(4, 3, 8);
+        camera.lookAt(0, 0, 0);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        container.appendChild(renderer.domElement);
+
+        // --- LIGHTS ---
+        const ambientLight = new THREE.AmbientLight(0x222244, 0.5);
+        scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0x00f0ff, 1.2);
+        keyLight.position.set(5, 10, 7);
+        keyLight.castShadow = true;
+        scene.add(keyLight);
+
+        const fillLight = new THREE.DirectionalLight(0x7a2bff, 0.8);
+        fillLight.position.set(-5, 0, 5);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        rimLight.position.set(0, -2, -5);
+        scene.add(rimLight);
+
+        const pointLight = new THREE.PointLight(0x00f0ff, 0.5, 10);
+        pointLight.position.set(0, 2, 2);
+        scene.add(pointLight);
+
+        // --- CREATE THE 3D COMPUTER ---
+        const computerGroup = new THREE.Group();
+        scene.add(computerGroup);
+
+        // 1. Monitor Frame
+        const frameMat = new THREE.MeshStandardMaterial({
+            color: 0x111122,
+            metalness: 0.9,
+            roughness: 0.2,
+            emissive: 0x050510,
+            emissiveIntensity: 0.2
+        });
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(3.0, 2.0, 0.2), frameMat);
+        frame.position.set(0, 0.8, 0);
+        frame.castShadow = true;
+        computerGroup.add(frame);
+
+        // 2. Screen (Glowing)
+        const screenCanvas = document.createElement('canvas');
+        screenCanvas.width = 512;
+        screenCanvas.height = 320;
+        const ctx = screenCanvas.getContext('2d');
+        // Generate a futuristic grid / code pattern
+        ctx.fillStyle = '#050510';
+        ctx.fillRect(0, 0, 512, 320);
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 20; i++) {
+            ctx.beginPath();
+            ctx.moveTo(Math.random() * 512, 0);
+            ctx.lineTo(Math.random() * 512, 320);
+            ctx.strokeStyle = `rgba(0, 240, 255, ${Math.random() * 0.15})`;
+            ctx.stroke();
+        }
+        for (let i = 0; i < 30; i++) {
+            ctx.fillStyle = `rgba(122, 43, 255, ${Math.random() * 0.2})`;
+            ctx.fillRect(Math.random() * 512, Math.random() * 320, 10, 2);
+        }
+        ctx.fillStyle = '#00f0ff';
+        ctx.font = '12px monospace';
+        ctx.fillText('> iMENA_TECH://boot', 20, 40);
+        ctx.fillStyle = '#7a2bff';
+        ctx.fillText('> system_ready', 20, 60);
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.3)';
+        for (let i = 0; i < 50; i++) {
+            ctx.fillText('0x' + Math.floor(Math.random() * 16).toString(16) + Math.floor(Math.random() * 16).toString(16),
+                Math.random() * 512, Math.random() * 320);
+        }
+
+        const screenTexture = new THREE.CanvasTexture(screenCanvas);
+        const screenMat = new THREE.MeshStandardMaterial({
+            map: screenTexture,
+            emissive: new THREE.Color(0x00f0ff),
+            emissiveIntensity: 0.8,
+            emissiveMap: screenTexture,
+            metalness: 0.1,
+            roughness: 0.4
+        });
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 1.7), screenMat);
+        screen.position.set(0, 0.8, 0.11);
+        computerGroup.add(screen);
+
+        // 3. Keyboard Base
+        const kbMat = new THREE.MeshStandardMaterial({
+            color: 0x0a0a1a,
+            metalness: 0.8,
+            roughness: 0.3,
+            emissive: 0x111122,
+            emissiveIntensity: 0.1
+        });
+        const kbBase = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.1, 0.8), kbMat);
+        kbBase.position.set(0, -0.4, 0.4);
+        kbBase.castShadow = true;
+        computerGroup.add(kbBase);
+
+        // 4. Keyboard Keys (Grid)
+        const keyMat = new THREE.MeshStandardMaterial({
+            color: 0x222244,
+            metalness: 0.2,
+            roughness: 0.6,
+            emissive: 0x112233,
+            emissiveIntensity: 0.3
+        });
+        const keyGroup = new THREE.Group();
+        for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 10; c++) {
+                const key = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 0.1), keyMat);
+                key.position.set(-0.8 + c * 0.18, 0.02, -0.3 + r * 0.15);
+                keyGroup.add(key);
+            }
+        }
+        keyGroup.position.set(0, -0.35, 0.4);
+        computerGroup.add(keyGroup);
+
+        // 5. Mouse
+        const mouseMat = new THREE.MeshStandardMaterial({
+            color: 0x1a1a2e,
+            metalness: 0.7,
+            roughness: 0.2,
+            emissive: 0x0a0a15
+        });
+        const mouse = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), mouseMat);
+        mouse.scale.set(1, 0.3, 1.5);
+        mouse.position.set(1.5, -0.4, 0.1);
+        computerGroup.add(mouse);
+
+        // 6. Floating Particles (Matrix Rain)
+        const particleCount = 1500;
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 10;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 6 + 1;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 5 - 1;
+            const color = Math.random() > 0.5 ? new THREE.Color(0x00f0ff) : new THREE.Color(0x7a2bff);
+            colors[i * 3] = color.r;
+            colors[i * 3 + 1] = color.g;
+            colors[i * 3 + 2] = color.b;
+            sizes[i] = Math.random() * 0.05 + 0.01;
+        }
+        const particleGeo = new THREE.BufferGeometry();
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        particleGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const particleMat = new THREE.PointsMaterial({
+            size: 0.03,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        computerGroup.add(particles);
+
+        // 7. Holographic Rings (data orbits)
+        const ringMat = new THREE.MeshStandardMaterial({
+            color: 0x00f0ff,
+            emissive: 0x00f0ff,
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.3,
+            wireframe: true,
+            side: THREE.DoubleSide
+        });
+        const ring1 = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.02, 16, 64), ringMat);
+        ring1.position.set(0, 0.8, 0);
+        ring1.rotation.x = Math.PI / 2;
+        computerGroup.add(ring1);
+
+        const ringMat2 = new THREE.MeshStandardMaterial({
+            color: 0x7a2bff,
+            emissive: 0x7a2bff,
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.2,
+            wireframe: true,
+            side: THREE.DoubleSide
+        });
+        const ring2 = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.015, 16, 64), ringMat2);
+        ring2.position.set(0, 0.8, 0);
+        ring2.rotation.x = Math.PI / 3;
+        ring2.rotation.z = Math.PI / 4;
+        computerGroup.add(ring2);
+
+        const ringMat3 = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            emissive: 0x00f0ff,
+            emissiveIntensity: 0.3,
+            transparent: true,
+            opacity: 0.1,
+            wireframe: true,
+            side: THREE.DoubleSide
+        });
+        const ring3 = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.01, 8, 48), ringMat3);
+        ring3.position.set(0, 0.8, 0);
+        ring3.rotation.x = Math.PI / 4;
+        ring3.rotation.y = Math.PI / 3;
+        computerGroup.add(ring3);
+
+        // 8. iMENA Tech Logo made of 3D Text (using boxes)
+        const logoGroup = new THREE.Group();
+        logoGroup.position.set(0, 0.8, 0);
+        const letterMat = new THREE.MeshStandardMaterial({
+            color: 0x00f0ff,
+            emissive: 0x00f0ff,
+            emissiveIntensity: 0.2,
+            metalness: 0.9,
+            roughness: 0.1
+        });
+        // Simple "i" "M" "T" blocks
+        const positionsLetters = [
+            [-1.2, 0, 0],
+            [-0.6, 0, 0],
+            [0, 0, 0],
+            [0.6, 0, 0],
+            [1.2, 0, 0]
+        ];
+        positionsLetters.forEach((pos, i) => {
+            const block = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.15), letterMat);
+            block.position.set(pos[0], pos[1] + Math.sin(i) * 0.1, pos[2]);
+            logoGroup.add(block);
+        });
+        // Add a small glow sphere behind logo
+        const glowSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.5, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0x7a2bff, transparent: true, opacity: 0.1, blending: THREE
+                    .AdditiveBlending })
+        );
+        logoGroup.add(glowSphere);
+        computerGroup.add(logoGroup);
+        logoGroup.visible = false;
+
+        // Initial state
+        computerGroup.position.y = -1;
+        computerGroup.scale.set(0.8, 0.8, 0.8);
+
+        // --- SCROLL LOGIC ---
+        let scrollProgress = 0;
+
+        function updateScroll() {
+            const scrollY = window.scrollY;
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            scrollProgress = maxScroll > 0 ? scrollY / maxScroll : 0;
+
+            // Update progress bar
+            document.getElementById('scrollBar').style.width = (scrollProgress * 100) + '%';
+
+            // Hide scroll hint
+            if (scrollProgress > 0.05) {
+                document.getElementById('scrollHint').style.opacity = '0';
+            } else {
+                document.getElementById('scrollHint').style.opacity = '1';
+            }
+
+            // --- 3D TRANSFORMATIONS BASED ON SCROLL ---
+
+            // 1. Position & Scale (floating up)
+            computerGroup.position.y = -0.5 + scrollProgress * 1.5;
+            const scale = 0.7 + scrollProgress * 0.5;
+            computerGroup.scale.set(scale, scale, scale);
+            computerGroup.rotation.y = scrollProgress * 0.8;
+
+            // 2. Screen glow intensity (phase 0-0.3)
+            const glowIntensity = 0.5 + scrollProgress * 1.5;
+            screenMat.emissiveIntensity = Math.min(glowIntensity, 2.0);
+
+            // 3. Particles explode / form (phase 0.2 - 0.6)
+            const particleSpread = 0.5 + scrollProgress * 3;
+            const posAttr = particles.geometry.attributes.position;
+            const array = posAttr.array;
+            // Only animate if we haven't captured initial positions
+            if (!window._initParticles) {
+                window._initParticles = new Float32Array(array);
+            }
+            const initPos = window._initParticles;
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                // Move from scattered to centered as scroll progresses
+                const targetX = initPos[i3] * (1 - scrollProgress * 0.7);
+                const targetY = initPos[i3 + 1] * (1 - scrollProgress * 0.5) + 0.8;
+                const targetZ = initPos[i3 + 2] * (1 - scrollProgress * 0.7);
+                array[i3] += (targetX - array[i3]) * 0.02;
+                array[i3 + 1] += (targetY - array[i3 + 1]) * 0.02;
+                array[i3 + 2] += (targetZ - array[i3 + 2]) * 0.02;
+            }
+            posAttr.needsUpdate = true;
+
+            // 4. Keyboard floating (phase 0.3 - 0.7)
+            const kbFloat = Math.max(0, (scrollProgress - 0.2) * 2);
+            keyGroup.position.y = -0.35 + kbFloat * 0.5;
+            keyGroup.rotation.x = kbFloat * 0.2;
+            keyGroup.rotation.z = kbFloat * 0.1;
+
+            // 5. Rings spin & glow (phase 0.4 - 0.8)
+            const ringPhase = Math.max(0, (scrollProgress - 0.3) * 2.5);
+            ring1.rotation.z = scrollProgress * 2;
+            ring2.rotation.y = scrollProgress * 3;
+            ring3.rotation.x = scrollProgress * 1.5;
+            ringMat.opacity = 0.1 + ringPhase * 0.5;
+            ringMat2.opacity = 0.1 + ringPhase * 0.4;
+            ringMat3.opacity = 0.05 + ringPhase * 0.3;
+            ring1.scale.set(1 + ringPhase * 0.5, 1 + ringPhase * 0.5, 1 + ringPhase * 0.5);
+            ring2.scale.set(1 + ringPhase * 0.4, 1 + ringPhase * 0.4, 1 + ringPhase * 0.4);
+            ring3.scale.set(1 + ringPhase * 0.6, 1 + ringPhase * 0.6, 1 + ringPhase * 0.6);
+
+            // 6. Logo Reveal (phase 0.7 - 1.0)
+            const logoPhase = Math.max(0, (scrollProgress - 0.65) * 4);
+            if (logoPhase > 0.1) {
+                logoGroup.visible = true;
+                logoGroup.scale.set(logoPhase, logoPhase, logoPhase);
+                logoGroup.rotation.y = scrollProgress * 2;
+                // Fade screen and rings to let logo shine
+                screenMat.emissiveIntensity = 2.0 - logoPhase * 1.5;
+                ringMat.opacity = 0.5 - logoPhase * 0.5;
+                ringMat2.opacity = 0.4 - logoPhase * 0.4;
+                ringMat3.opacity = 0.3 - logoPhase * 0.3;
+                // Glow sphere
+                glowSphere.material.opacity = 0.1 + logoPhase * 0.3;
+                glowSphere.scale.set(1 + logoPhase, 1 + logoPhase, 1 + logoPhase);
+            } else {
+                logoGroup.visible = false;
+            }
+
+            // 7. Mouse moves
+            mouse.position.x = 1.5 + Math.sin(scrollProgress * 10) * 0.2;
+            mouse.position.z = 0.1 + Math.cos(scrollProgress * 8) * 0.1;
+        }
+
+        // --- INTERSECTION OBSERVER FOR TEXT SECTIONS (Fade in) ---
+        const sections = document.querySelectorAll('.section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.2 });
+        sections.forEach(s => observer.observe(s));
+
+        // --- WINDOW EVENTS ---
+        window.addEventListener('scroll', updateScroll);
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Auto-rotate the entire scene slightly even when not scrolling? No, let scroll control it.
+            // But we add some idle floating motion to particles.
+            if (!window._time) window._time = 0;
+            window._time += 0.01;
+
+            // Idle rotation if scroll is near 0
+            if (scrollProgress < 0.1) {
+                computerGroup.rotation.y += 0.001;
+            }
+
+            // Mouse idle hover
+            mouse.position.y = -0.4 + Math.sin(window._time * 2) * 0.02;
+
+            renderer.render(scene, camera);
+        }
+
+        // Initial call to set state
+        setTimeout(() => {
+            updateScroll();
+        }, 100);
+
+        animate();
+
+        console.log('🚀 iMENA Tech 3D Universe Loaded.');
+        console.log('💻 Built for the best developers in the world.');
+    </script>
+</body>
+</html>
