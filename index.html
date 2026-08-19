@@ -1,685 +1,1048 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iMENA Tech — Building a Smarter Digital Future</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iMENA Tech — 3D Universe</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Fira+Code&display=swap" rel="stylesheet" />
+
     <style>
-        /* --- RESET & BASE --- */
-        * {
+        /* ————— Reset & Base ————— */
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
             font-family: 'Inter', sans-serif;
-            background: #05050A;
+            background: #000004;
             color: #fff;
             overflow-x: hidden;
+            overflow-y: scroll;
+            height: 100vh;
+            scrollbar-width: none;
+            /* Firefox */
         }
 
-        /* --- FIXED 3D CANVAS (BACKGROUND) --- */
-        #canvas-container {
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ————— Scroll Container ————— */
+        #scroll-container {
+            height: 600vh;
+            /* 6 sectors × 100vh */
+            position: relative;
+            pointer-events: none;
+        }
+
+        /* ————— Three.js Canvas ————— */
+        #three-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
             z-index: 0;
-            pointer-events: none; /* Allow scrolling through */
+            pointer-events: none;
         }
 
-        /* --- SCROLLABLE CONTENT (OVERLAY) --- */
-        .content {
-            position: relative;
-            z-index: 10;
-            pointer-events: none; /* Let scroll pass, but buttons need pointer */
-        }
-        .content section {
-            pointer-events: none;
-        }
-        .content section *:not(.no-click) {
-            pointer-events: none;
-        }
-        .content .btn, .content .nav-link {
+        /* ————— Fixed Navbar ————— */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 18px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            background: rgba(0, 0, 4, 0.55);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             pointer-events: auto;
+            transition: background 0.3s;
         }
 
-        /* --- SECTIONS --- */
-        .section {
-            height: 100vh;
+        .navbar .logo {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #ff8844, #ff6b35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .navbar .logo span {
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.4);
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+            font-size: 13px;
+            font-weight: 450;
+            letter-spacing: 0.2px;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            transition: color 0.25s, transform 0.2s;
+            cursor: pointer;
+            padding: 4px 0;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+        }
+        .nav-links a.active {
+            color: #fff;
+            border-bottom-color: #ff8844;
+        }
+
+        /* ————— Sidebar Dots ————— */
+        .sidebar-dots {
+            position: fixed;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 90;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 2rem;
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-        .section.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Hero Section */
-        #hero {
-            justify-content: flex-end;
-            padding-bottom: 15vh;
-        }
-        #hero h1 {
-            font-size: clamp(3rem, 10vw, 7rem);
-            font-weight: 800;
-            background: linear-gradient(135deg, #00f0ff 0%, #7a2bff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 40px rgba(0, 240, 255, 0.2);
-            letter-spacing: -0.02em;
-        }
-        #hero .tagline {
-            font-size: clamp(1rem, 2vw, 1.5rem);
-            font-weight: 300;
-            color: rgba(255, 255, 255, 0.7);
-            margin-top: 1rem;
-            letter-spacing: 0.3em;
-        }
-        #hero .sub-tagline {
-            font-size: clamp(0.8rem, 1.2vw, 1rem);
-            color: rgba(255, 255, 255, 0.4);
-            margin-top: 0.5rem;
-            max-width: 600px;
-        }
-
-        /* Services Section */
-        #services {
-            justify-content: center;
-            gap: 2rem;
-        }
-        #services h2 {
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-        #services h2 span {
-            background: linear-gradient(135deg, #00f0ff, #7a2bff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .service-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 2rem;
-            max-width: 900px;
-            width: 100%;
-            pointer-events: none;
-        }
-        .service-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 2rem 1.5rem;
-            border-radius: 20px;
-            transition: all 0.4s ease;
+            gap: 14px;
             pointer-events: auto;
-            cursor: default;
-        }
-        .service-card:hover {
-            transform: translateY(-10px);
-            background: rgba(0, 240, 255, 0.05);
-            border-color: rgba(0, 240, 255, 0.2);
-            box-shadow: 0 20px 40px -10px rgba(0, 240, 255, 0.1);
-        }
-        .service-card .icon {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .service-card h3 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 0.3rem;
-        }
-        .service-card p {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.5);
         }
 
-        /* Footer / Contact */
-        #contact {
-            justify-content: flex-start;
-            padding-top: 15vh;
-        }
-        #contact .brand {
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #00f0ff, #7a2bff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        #contact p {
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 0.9rem;
-            max-width: 400px;
-            margin-top: 0.5rem;
+        .sidebar-dots .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+            position: relative;
         }
 
-        /* Scroll Progress */
-        #scroll-progress {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            width: 200px;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
+        .sidebar-dots .dot.active {
+            background: #ff8844;
+            border-color: #ff8844;
+            box-shadow: 0 0 16px rgba(255, 136, 68, 0.35);
+            transform: scale(1.3);
+        }
+
+        .sidebar-dots .dot .dot-tooltip {
+            position: absolute;
+            right: 22px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 4, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 4px 14px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #fff;
+            white-space: nowrap;
+            opacity: 0;
             pointer-events: none;
-        }
-        #scroll-progress .bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #00f0ff, #7a2bff);
-            border-radius: 10px;
-            transition: width 0.1s linear;
+            transition: opacity 0.25s;
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
-        /* Scroll hint */
+        .sidebar-dots .dot:hover .dot-tooltip {
+            opacity: 1;
+        }
+
+        .sidebar-dots .dot .dot-tooltip::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left: 6px solid rgba(0, 0, 4, 0.8);
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+        }
+
+        /* ————— Scroll Progress Bar ————— */
+        .scroll-progress {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            z-index: 100;
+            background: linear-gradient(90deg, #ff6b35, #ff8844, #ffd93d, #a78bfa, #6bcbff);
+            width: 0%;
+            transition: width 0.08s linear;
+            border-radius: 0 3px 3px 0;
+            box-shadow: 0 0 20px rgba(255, 136, 68, 0.2);
+        }
+
+        /* ————— Scroll Hint ————— */
         .scroll-hint {
             position: fixed;
-            bottom: 50px;
+            bottom: 48px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 50;
-            color: rgba(255, 255, 255, 0.2);
-            font-size: 0.8rem;
-            letter-spacing: 0.2em;
-            animation: bounce 2s infinite;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: floatHint 2.4s ease-in-out infinite;
             pointer-events: none;
+            transition: opacity 0.8s ease;
+            font-weight: 300;
         }
-        @keyframes bounce {
+
+        .scroll-hint.hidden {
+            opacity: 0;
+        }
+
+        @keyframes floatHint {
             0%,
             100% {
                 transform: translateX(-50%) translateY(0);
             }
             50% {
-                transform: translateX(-50%) translateY(-10px);
+                transform: translateX(-50%) translateY(-8px);
             }
         }
 
+        /* ————— Glass Content Panel ————— */
+        .content-panel {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.92);
+            z-index: 40;
+            max-width: 640px;
+            width: 90%;
+            padding: 32px 40px;
+            background: rgba(0, 0, 4, 0.55);
+            backdrop-filter: blur(24px) saturate(1.2);
+            -webkit-backdrop-filter: blur(24px) saturate(1.2);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            opacity: 0;
+            transition: opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+            text-align: center;
+        }
+
+        .content-panel.visible {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+            pointer-events: auto;
+        }
+
+        .content-panel .panel-tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 4px 16px;
+            border-radius: 40px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 12px;
+        }
+
+        .content-panel .panel-title {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff 30%, rgba(255, 255, 255, 0.5));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .content-panel .panel-desc {
+            font-size: 15px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 16px;
+            font-weight: 350;
+        }
+
+        .content-panel .panel-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .content-panel .panel-tags span {
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            padding: 4px 14px;
+            border-radius: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.2px;
+        }
+
+        .content-panel .panel-tags span.highlight {
+            background: rgba(255, 136, 68, 0.12);
+            border-color: rgba(255, 136, 68, 0.2);
+            color: #ff8844;
+        }
+
+        /* ————— Responsive ————— */
         @media (max-width: 768px) {
-            .service-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 1rem;
+            .navbar {
+                padding: 14px 20px;
             }
-            .service-card {
-                padding: 1rem;
+            .navbar .logo {
+                font-size: 17px;
+            }
+            .nav-links {
+                gap: 14px;
+                font-size: 11px;
+            }
+            .nav-links a {
+                padding: 2px 0;
+            }
+            .sidebar-dots {
+                right: 14px;
+                gap: 12px;
+            }
+            .sidebar-dots .dot {
+                width: 8px;
+                height: 8px;
+            }
+            .content-panel {
+                bottom: 80px;
+                padding: 24px 24px;
+                max-width: 92%;
+            }
+            .content-panel .panel-title {
+                font-size: 22px;
+            }
+            .content-panel .panel-desc {
+                font-size: 14px;
+            }
+            .scroll-hint {
+                font-size: 11px;
+                bottom: 32px;
+            }
+            .sidebar-dots .dot .dot-tooltip {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar {
+                padding: 12px 16px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .navbar .logo {
+                font-size: 15px;
+            }
+            .nav-links {
+                gap: 10px;
+                font-size: 10px;
+                flex-wrap: wrap;
+            }
+            .content-panel {
+                bottom: 64px;
+                padding: 20px 18px;
+            }
+            .content-panel .panel-title {
+                font-size: 19px;
+            }
+            .content-panel .panel-desc {
+                font-size: 13px;
+            }
+            .content-panel .panel-tags span {
+                font-size: 10px;
+                padding: 3px 10px;
+            }
+        }
+
+        /* ————— Reduced Motion ————— */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+            .scroll-hint {
+                animation: none;
+            }
+            .content-panel {
+                transition: opacity 0.2s ease, transform 0.2s ease;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- 3D CANVAS CONTAINER -->
-    <div id="canvas-container"></div>
+    <!-- Scroll Container (drives camera) -->
+    <div id="scroll-container"></div>
 
-    <!-- SCROLL PROGRESS BAR -->
-    <div id="scroll-progress">
-        <div class="bar" id="scrollBar"></div>
+    <!-- Three.js Canvas -->
+    <div id="three-canvas"></div>
+
+    <!-- Fixed Navbar -->
+    <nav class="navbar" id="navbar">
+        <div class="logo">iMENA <span>Tech</span></div>
+        <ul class="nav-links" id="navLinks">
+            <li><a data-sector="0">Origin</a></li>
+            <li><a data-sector="1">Websites</a></li>
+            <li><a data-sector="2">Web Apps</a></li>
+            <li><a data-sector="3">Systems</a></li>
+            <li><a data-sector="4">AI</a></li>
+            <li><a data-sector="5">Hub</a></li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar Dots -->
+    <div class="sidebar-dots" id="sidebarDots"></div>
+
+    <!-- Scroll Progress -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Scroll Hint -->
+    <div class="scroll-hint" id="scrollHint">⬇ Scroll to explore</div>
+
+    <!-- Glass Content Panel -->
+    <div class="content-panel" id="contentPanel">
+        <div class="panel-tag" id="panelTag">SECTOR</div>
+        <div class="panel-title" id="panelTitle">Origin</div>
+        <div class="panel-desc" id="panelDesc">Welcome to the iMENA Tech universe.</div>
+        <div class="panel-tags" id="panelTags"></div>
     </div>
 
-    <!-- SCROLL HINT -->
-    <div class="scroll-hint" id="scrollHint">SCROLL TO EXPLORE</div>
-
-    <!-- OVERLAY CONTENT -->
-    <div class="content">
-        <section id="hero" class="section visible">
-            <h1>iMENA TECH</h1>
-            <div class="tagline">DIGITAL SOLUTIONS</div>
-            <div class="sub-tagline">Websites · WebApps · Systems · AI</div>
-        </section>
-
-        <section id="services" class="section">
-            <h2>What we <span>build</span></h2>
-            <div class="service-grid">
-                <div class="service-card">
-                    <div class="icon">🌐</div>
-                    <h3>Websites</h3>
-                    <p>Fast, responsive, 3D-enabled</p>
-                </div>
-                <div class="service-card">
-                    <div class="icon">📱</div>
-                    <h3>WebApps</h3>
-                    <p>School portals & dashboards</p>
-                </div>
-                <div class="service-card">
-                    <div class="icon">⚙️</div>
-                    <h3>Systems</h3>
-                    <p>Admin & management tools</p>
-                </div>
-                <div class="service-card">
-                    <div class="icon">🧠</div>
-                    <h3>AI Solutions</h3>
-                    <p>Smart assistants & automation</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="contact" class="section">
-            <div class="brand">iMENA Tech</div>
-            <p>Building a smarter digital future for Africa.<br>Part of the iMENA Hub ecosystem.</p>
-            <p style="margin-top: 2rem; font-size: 0.7rem;">© 2026 · Designed & Developed by iMENA Tech</p>
-        </section>
-    </div>
-
-    <!-- THREE.JS CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    <!-- ————— Three.js ————— -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
     </script>
 
-    <!-- MAIN 3D SCRIPT -->
-    <script>
-        // --- INITIALIZATION ---
-        const container = document.getElementById('canvas-container');
+    <script type="module">
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // IMPORTS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // SECTOR DATA
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const SECTORS = [{
+            id: 0,
+            name: 'Origin',
+            color: '#888888',
+            pos: [0, 0, 0],
+            radius: 0,
+            desc: 'Welcome to the iMENA Tech universe. Scroll to begin your journey.',
+            tags: [],
+            planet: false,
+        }, {
+            id: 1,
+            name: 'Websites',
+            color: '#ff6b35',
+            pos: [1.8, -0.4, -14],
+            radius: 1.0,
+            desc: 'Fast, responsive, SEO-optimized web experiences with premium UX.',
+            tags: ['Next.js', 'Tailwind', 'Vercel', 'SEO'],
+            planet: true,
+        }, {
+            id: 2,
+            name: 'Web Apps',
+            color: '#6bcbff',
+            pos: [-1.4, 0.7, -28],
+            radius: 1.2,
+            desc: 'Interactive portals, dashboards, and SaaS platforms with real-time data.',
+            tags: ['React', 'TypeScript', 'Node.js', 'PostgreSQL'],
+            planet: true,
+        }, {
+            id: 3,
+            name: 'Systems',
+            color: '#ffd93d',
+            pos: [2.0, -0.6, -42],
+            radius: 1.0,
+            desc: 'Enterprise-grade admin tools, management systems, and scalable infrastructure.',
+            tags: ['Prisma', 'Supabase', 'Docker', 'APIs'],
+            planet: true,
+        }, {
+            id: 4,
+            name: 'AI Solutions',
+            color: '#a78bfa',
+            pos: [-1.6, 0.4, -56],
+            radius: 1.3,
+            desc: 'Smart assistants, automated workflows, and predictive analytics.',
+            tags: ['OpenAI', 'LangChain', 'Vector DB', 'RAG'],
+            planet: true,
+        }, {
+            id: 5,
+            name: 'iMENA Hub',
+            color: '#ff8844',
+            pos: [0, 0, -72],
+            radius: 1.6,
+            desc: 'Building a smarter digital future. Websites · Web Apps · Systems · AI.',
+            tags: ['Innovation', 'Excellence', 'Future-ready'],
+            planet: true,
+        }, ];
+
+        const SECTOR_COUNT = SECTORS.length;
+        const PLANET_SECTORS = SECTORS.filter(s => s.planet);
+        const SECTOR_Z = SECTORS.map(s => s.pos[2]);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // DOM REFS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const container = document.getElementById('three-canvas');
+        const scrollContainer = document.getElementById('scroll-container');
+        const progressBar = document.getElementById('scrollProgress');
+        const sidebarDots = document.getElementById('sidebarDots');
+        const navLinks = document.getElementById('navLinks');
+        const panel = document.getElementById('contentPanel');
+        const panelTag = document.getElementById('panelTag');
+        const panelTitle = document.getElementById('panelTitle');
+        const panelDesc = document.getElementById('panelDesc');
+        const panelTags = document.getElementById('panelTags');
+        const scrollHint = document.getElementById('scrollHint');
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // SETUP SIDEBAR DOTS & NAV
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        SECTORS.forEach((s, i) => {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            dot.dataset.index = i;
+            const tip = document.createElement('span');
+            tip.className = 'dot-tooltip';
+            tip.textContent = s.name;
+            dot.appendChild(tip);
+            dot.addEventListener('click', () => jumpToSector(i));
+            sidebarDots.appendChild(dot);
+        });
+
+        document.querySelectorAll('.nav-links a').forEach((a, i) => {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                jumpToSector(i);
+            });
+        });
+
+        function jumpToSector(index) {
+            const clamped = Math.max(0, Math.min(SECTOR_COUNT - 1, index));
+            const progress = clamped / (SECTOR_COUNT - 1);
+            const targetScroll = progress * (scrollContainer.scrollHeight - window.innerHeight);
+            window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // THREE.JS SCENE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x05050A);
+        scene.background = new THREE.Color(0x000004);
+        scene.fog = new THREE.Fog(0x000004, 30, 90);
 
         // Camera
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(4, 3, 8);
-        camera.lookAt(0, 0, 0);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(0, 1.2, 6);
+        camera.lookAt(0, 0, -10);
 
         // Renderer
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            powerPreference: 'high-performance',
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.2;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
         container.appendChild(renderer.domElement);
 
-        // --- LIGHTS ---
-        const ambientLight = new THREE.AmbientLight(0x222244, 0.5);
+        // CSS2 Renderer (labels)
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        container.appendChild(labelRenderer.domElement);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // POST-PROCESSING
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            0.6, // strength
+            0.3, // radius
+            0.1 // threshold
+        );
+        composer.addPass(bloomPass);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // LIGHTS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const ambientLight = new THREE.AmbientLight(0x222244, 0.6);
         scene.add(ambientLight);
 
-        const keyLight = new THREE.DirectionalLight(0x00f0ff, 1.2);
-        keyLight.position.set(5, 10, 7);
-        keyLight.castShadow = true;
-        scene.add(keyLight);
+        const sunLight = new THREE.PointLight(0xff8844, 80, 60);
+        sunLight.position.set(0, 0, 0);
+        scene.add(sunLight);
 
-        const fillLight = new THREE.DirectionalLight(0x7a2bff, 0.8);
-        fillLight.position.set(-5, 0, 5);
+        const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+        fillLight.position.set(5, 8, -10);
         scene.add(fillLight);
 
-        const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        rimLight.position.set(0, -2, -5);
-        scene.add(rimLight);
-
-        const pointLight = new THREE.PointLight(0x00f0ff, 0.5, 10);
-        pointLight.position.set(0, 2, 2);
-        scene.add(pointLight);
-
-        // --- CREATE THE 3D COMPUTER ---
-        const computerGroup = new THREE.Group();
-        scene.add(computerGroup);
-
-        // 1. Monitor Frame
-        const frameMat = new THREE.MeshStandardMaterial({
-            color: 0x111122,
-            metalness: 0.9,
-            roughness: 0.2,
-            emissive: 0x050510,
-            emissiveIntensity: 0.2
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // SUN
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const sunGeo = new THREE.SphereGeometry(2.8, 48, 48);
+        const sunMat = new THREE.MeshStandardMaterial({
+            color: 0xff8844,
+            emissive: 0xff5500,
+            emissiveIntensity: 2.5,
+            roughness: 0.1,
+            metalness: 0.0,
         });
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(3.0, 2.0, 0.2), frameMat);
-        frame.position.set(0, 0.8, 0);
-        frame.castShadow = true;
-        computerGroup.add(frame);
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        sun.position.set(0, 0, 0);
+        scene.add(sun);
 
-        // 2. Screen (Glowing)
-        const screenCanvas = document.createElement('canvas');
-        screenCanvas.width = 512;
-        screenCanvas.height = 320;
-        const ctx = screenCanvas.getContext('2d');
-        // Generate a futuristic grid / code pattern
-        ctx.fillStyle = '#050510';
-        ctx.fillRect(0, 0, 512, 320);
-        ctx.strokeStyle = '#00f0ff';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 20; i++) {
-            ctx.beginPath();
-            ctx.moveTo(Math.random() * 512, 0);
-            ctx.lineTo(Math.random() * 512, 320);
-            ctx.strokeStyle = `rgba(0, 240, 255, ${Math.random() * 0.15})`;
-            ctx.stroke();
-        }
-        for (let i = 0; i < 30; i++) {
-            ctx.fillStyle = `rgba(122, 43, 255, ${Math.random() * 0.2})`;
-            ctx.fillRect(Math.random() * 512, Math.random() * 320, 10, 2);
-        }
-        ctx.fillStyle = '#00f0ff';
-        ctx.font = '12px monospace';
-        ctx.fillText('> iMENA_TECH://boot', 20, 40);
-        ctx.fillStyle = '#7a2bff';
-        ctx.fillText('> system_ready', 20, 60);
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.3)';
-        for (let i = 0; i < 50; i++) {
-            ctx.fillText('0x' + Math.floor(Math.random() * 16).toString(16) + Math.floor(Math.random() * 16).toString(16),
-                Math.random() * 512, Math.random() * 320);
-        }
+        // Sun glow sprite
+        const glowTexture = (() => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+            grad.addColorStop(0, 'rgba(255,136,68,1)');
+            grad.addColorStop(0.15, 'rgba(255,100,40,0.8)');
+            grad.addColorStop(0.5, 'rgba(255,60,20,0.3)');
+            grad.addColorStop(1, 'rgba(255,40,10,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 256, 256);
+            return new THREE.CanvasTexture(canvas);
+        })();
 
-        const screenTexture = new THREE.CanvasTexture(screenCanvas);
-        const screenMat = new THREE.MeshStandardMaterial({
-            map: screenTexture,
-            emissive: new THREE.Color(0x00f0ff),
-            emissiveIntensity: 0.8,
-            emissiveMap: screenTexture,
-            metalness: 0.1,
-            roughness: 0.4
+        const glowSprite = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+                map: glowTexture,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                opacity: 0.9,
+                depthWrite: false,
+            })
+        );
+        glowSprite.scale.set(18, 18, 1);
+        sun.add(glowSprite);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // PLANETS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const planets = [];
+        const planetMeshes = [];
+
+        PLANET_SECTORS.forEach((s) => {
+            const color = new THREE.Color(s.color);
+            const geo = new THREE.SphereGeometry(s.radius, 48, 48);
+            const mat = new THREE.MeshStandardMaterial({
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.15,
+                roughness: 0.35,
+                metalness: 0.2,
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(s.pos[0], s.pos[1], s.pos[2]);
+            mesh.userData.sectorId = s.id;
+            scene.add(mesh);
+            planetMeshes.push(mesh);
+
+            // Ring / glow around planet
+            const ringGeo = new THREE.SphereGeometry(s.radius * 1.35, 32, 32);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.08,
+                wireframe: true,
+                depthWrite: false,
+            });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.copy(mesh.position);
+            scene.add(ring);
+
+            // Store for animation
+            planets.push({
+                mesh,
+                ring,
+                sector: s,
+                rotSpeed: 0.08 + Math.random() * 0.12,
+                orbitSpeed: 0.02 + Math.random() * 0.03,
+                orbitOffset: Math.random() * Math.PI * 2,
+                basePos: new THREE.Vector3(s.pos[0], s.pos[1], s.pos[2]),
+            });
+
+            // ── CSS2D Label ──
+            const labelDiv = document.createElement('div');
+            labelDiv.textContent = s.name;
+            labelDiv.style.color = '#fff';
+            labelDiv.style.fontFamily = 'Inter, sans-serif';
+            labelDiv.style.fontSize = '15px';
+            labelDiv.style.fontWeight = '500';
+            labelDiv.style.letterSpacing = '0.5px';
+            labelDiv.style.textShadow = '0 0 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.6)';
+            labelDiv.style.background = 'rgba(0,0,4,0.35)';
+            labelDiv.style.backdropFilter = 'blur(6px)';
+            labelDiv.style.padding = '6px 18px';
+            labelDiv.style.borderRadius = '40px';
+            labelDiv.style.border = '1px solid rgba(255,255,255,0.06)';
+            labelDiv.style.pointerEvents = 'none';
+            labelDiv.style.transition = 'opacity 0.4s, transform 0.4s';
+
+            const label = new CSS2DObject(labelDiv);
+            label.position.set(s.pos[0], s.pos[1] + s.radius + 1.2, s.pos[2]);
+            scene.add(label);
+            mesh.userData.label = label;
         });
-        const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 1.7), screenMat);
-        screen.position.set(0, 0.8, 0.11);
-        computerGroup.add(screen);
 
-        // 3. Keyboard Base
-        const kbMat = new THREE.MeshStandardMaterial({
-            color: 0x0a0a1a,
-            metalness: 0.8,
-            roughness: 0.3,
-            emissive: 0x111122,
-            emissiveIntensity: 0.1
-        });
-        const kbBase = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.1, 0.8), kbMat);
-        kbBase.position.set(0, -0.4, 0.4);
-        kbBase.castShadow = true;
-        computerGroup.add(kbBase);
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // STARS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const starCount = Math.min(6000, window.innerWidth < 768 ? 3000 : 6000);
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = new Float32Array(starCount * 3);
+        const starSizes = new Float32Array(starCount);
+        const starColors = new Float32Array(starCount * 3);
 
-        // 4. Keyboard Keys (Grid)
-        const keyMat = new THREE.MeshStandardMaterial({
-            color: 0x222244,
-            metalness: 0.2,
-            roughness: 0.6,
-            emissive: 0x112233,
-            emissiveIntensity: 0.3
-        });
-        const keyGroup = new THREE.Group();
-        for (let r = 0; r < 4; r++) {
-            for (let c = 0; c < 10; c++) {
-                const key = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 0.1), keyMat);
-                key.position.set(-0.8 + c * 0.18, 0.02, -0.3 + r * 0.15);
-                keyGroup.add(key);
-            }
+        for (let i = 0; i < starCount; i++) {
+            const r = 20 + Math.random() * 70;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+            starPos[i * 3 + 1] = r * Math.cos(phi) * 0.4;
+            starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta) - 20;
+            starSizes[i] = 0.5 + Math.random() * 1.5;
+            const c = 0.5 + Math.random() * 0.5;
+            starColors[i * 3] = c;
+            starColors[i * 3 + 1] = c;
+            starColors[i * 3 + 2] = c + Math.random() * 0.2;
         }
-        keyGroup.position.set(0, -0.35, 0.4);
-        computerGroup.add(keyGroup);
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+        starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
 
-        // 5. Mouse
-        const mouseMat = new THREE.MeshStandardMaterial({
-            color: 0x1a1a2e,
-            metalness: 0.7,
-            roughness: 0.2,
-            emissive: 0x0a0a15
-        });
-        const mouse = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), mouseMat);
-        mouse.scale.set(1, 0.3, 1.5);
-        mouse.position.set(1.5, -0.4, 0.1);
-        computerGroup.add(mouse);
-
-        // 6. Floating Particles (Matrix Rain)
-        const particleCount = 1500;
-        const positions = new Float32Array(particleCount * 3);
-        const colors = new Float32Array(particleCount * 3);
-        const sizes = new Float32Array(particleCount);
-        for (let i = 0; i < particleCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 10;
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 6 + 1;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 5 - 1;
-            const color = Math.random() > 0.5 ? new THREE.Color(0x00f0ff) : new THREE.Color(0x7a2bff);
-            colors[i * 3] = color.r;
-            colors[i * 3 + 1] = color.g;
-            colors[i * 3 + 2] = color.b;
-            sizes[i] = Math.random() * 0.05 + 0.01;
-        }
-        const particleGeo = new THREE.BufferGeometry();
-        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-        particleGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-        const particleMat = new THREE.PointsMaterial({
-            size: 0.03,
-            vertexColors: true,
+        const starMat = new THREE.PointsMaterial({
+            size: 0.25,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.9,
             blending: THREE.AdditiveBlending,
-            depthWrite: false
+            sizeAttenuation: true,
+            vertexColors: true,
+            depthWrite: false,
         });
-        const particles = new THREE.Points(particleGeo, particleMat);
-        computerGroup.add(particles);
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
 
-        // 7. Holographic Rings (data orbits)
-        const ringMat = new THREE.MeshStandardMaterial({
-            color: 0x00f0ff,
-            emissive: 0x00f0ff,
-            emissiveIntensity: 0.5,
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // DUST PARTICLES
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const dustCount = Math.min(2000, window.innerWidth < 768 ? 1000 : 2000);
+        const dustGeo = new THREE.BufferGeometry();
+        const dustPos = new Float32Array(dustCount * 3);
+        const dustSizes = new Float32Array(dustCount);
+        const dustVel = [];
+
+        for (let i = 0; i < dustCount; i++) {
+            dustPos[i * 3] = (Math.random() - 0.5) * 80;
+            dustPos[i * 3 + 1] = (Math.random() - 0.5) * 30;
+            dustPos[i * 3 + 2] = (Math.random() - 0.5) * 80 - 20;
+            dustSizes[i] = 0.03 + Math.random() * 0.08;
+            dustVel.push({
+                x: (Math.random() - 0.5) * 0.002,
+                y: (Math.random() - 0.5) * 0.001,
+                z: (Math.random() - 0.5) * 0.002 - 0.003,
+            });
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+        dustGeo.setAttribute('size', new THREE.BufferAttribute(dustSizes, 1));
+
+        const dustMat = new THREE.PointsMaterial({
+            color: 0x8899ff,
+            size: 0.08,
             transparent: true,
             opacity: 0.3,
-            wireframe: true,
-            side: THREE.DoubleSide
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true,
+            depthWrite: false,
         });
-        const ring1 = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.02, 16, 64), ringMat);
-        ring1.position.set(0, 0.8, 0);
-        ring1.rotation.x = Math.PI / 2;
-        computerGroup.add(ring1);
+        const dust = new THREE.Points(dustGeo, dustMat);
+        scene.add(dust);
 
-        const ringMat2 = new THREE.MeshStandardMaterial({
-            color: 0x7a2bff,
-            emissive: 0x7a2bff,
-            emissiveIntensity: 0.5,
-            transparent: true,
-            opacity: 0.2,
-            wireframe: true,
-            side: THREE.DoubleSide
-        });
-        const ring2 = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.015, 16, 64), ringMat2);
-        ring2.position.set(0, 0.8, 0);
-        ring2.rotation.x = Math.PI / 3;
-        ring2.rotation.z = Math.PI / 4;
-        computerGroup.add(ring2);
-
-        const ringMat3 = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            emissive: 0x00f0ff,
-            emissiveIntensity: 0.3,
-            transparent: true,
-            opacity: 0.1,
-            wireframe: true,
-            side: THREE.DoubleSide
-        });
-        const ring3 = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.01, 8, 48), ringMat3);
-        ring3.position.set(0, 0.8, 0);
-        ring3.rotation.x = Math.PI / 4;
-        ring3.rotation.y = Math.PI / 3;
-        computerGroup.add(ring3);
-
-        // 8. iMENA Tech Logo made of 3D Text (using boxes)
-        const logoGroup = new THREE.Group();
-        logoGroup.position.set(0, 0.8, 0);
-        const letterMat = new THREE.MeshStandardMaterial({
-            color: 0x00f0ff,
-            emissive: 0x00f0ff,
-            emissiveIntensity: 0.2,
-            metalness: 0.9,
-            roughness: 0.1
-        });
-        // Simple "i" "M" "T" blocks
-        const positionsLetters = [
-            [-1.2, 0, 0],
-            [-0.6, 0, 0],
-            [0, 0, 0],
-            [0.6, 0, 0],
-            [1.2, 0, 0]
-        ];
-        positionsLetters.forEach((pos, i) => {
-            const block = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.15), letterMat);
-            block.position.set(pos[0], pos[1] + Math.sin(i) * 0.1, pos[2]);
-            logoGroup.add(block);
-        });
-        // Add a small glow sphere behind logo
-        const glowSphere = new THREE.Mesh(
-            new THREE.SphereGeometry(0.5, 16, 16),
-            new THREE.MeshBasicMaterial({ color: 0x7a2bff, transparent: true, opacity: 0.1, blending: THREE
-                    .AdditiveBlending })
-        );
-        logoGroup.add(glowSphere);
-        computerGroup.add(logoGroup);
-        logoGroup.visible = false;
-
-        // Initial state
-        computerGroup.position.y = -1;
-        computerGroup.scale.set(0.8, 0.8, 0.8);
-
-        // --- SCROLL LOGIC ---
-        let scrollProgress = 0;
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // SCROLL HANDLING
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let currentScrollProgress = 0;
+        let targetCameraZ = 6;
+        let currentCameraZ = 6;
+        let activeSector = 0;
 
         function updateScroll() {
+            const maxScroll = scrollContainer.scrollHeight - window.innerHeight;
             const scrollY = window.scrollY;
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
-            scrollProgress = maxScroll > 0 ? scrollY / maxScroll : 0;
+            const progress = maxScroll > 0 ? scrollY / maxScroll : 0;
+            currentScrollProgress = Math.min(1, Math.max(0, progress));
+
+            // Map progress to camera Z
+            const minZ = 6;
+            const maxZ = SECTOR_Z[SECTOR_Z.length - 1] - 2;
+            targetCameraZ = minZ + (maxZ - minZ) * currentScrollProgress;
 
             // Update progress bar
-            document.getElementById('scrollBar').style.width = (scrollProgress * 100) + '%';
+            progressBar.style.width = `${currentScrollProgress * 100}%`;
 
-            // Hide scroll hint
-            if (scrollProgress > 0.05) {
-                document.getElementById('scrollHint').style.opacity = '0';
+            // Update active sector
+            const rawIndex = currentScrollProgress * (SECTOR_COUNT - 1);
+            const sectorIndex = Math.round(rawIndex);
+            activeSector = Math.min(SECTOR_COUNT - 1, Math.max(0, sectorIndex));
+
+            // Update dots
+            document.querySelectorAll('.sidebar-dots .dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === activeSector);
+            });
+
+            // Update nav
+            document.querySelectorAll('.nav-links a').forEach((a, i) => {
+                a.classList.toggle('active', i === activeSector);
+            });
+
+            // Update content panel
+            updatePanel(activeSector);
+
+            // Scroll hint
+            if (currentScrollProgress > 0.05) {
+                scrollHint.classList.add('hidden');
             } else {
-                document.getElementById('scrollHint').style.opacity = '1';
+                scrollHint.classList.remove('hidden');
             }
-
-            // --- 3D TRANSFORMATIONS BASED ON SCROLL ---
-
-            // 1. Position & Scale (floating up)
-            computerGroup.position.y = -0.5 + scrollProgress * 1.5;
-            const scale = 0.7 + scrollProgress * 0.5;
-            computerGroup.scale.set(scale, scale, scale);
-            computerGroup.rotation.y = scrollProgress * 0.8;
-
-            // 2. Screen glow intensity (phase 0-0.3)
-            const glowIntensity = 0.5 + scrollProgress * 1.5;
-            screenMat.emissiveIntensity = Math.min(glowIntensity, 2.0);
-
-            // 3. Particles explode / form (phase 0.2 - 0.6)
-            const particleSpread = 0.5 + scrollProgress * 3;
-            const posAttr = particles.geometry.attributes.position;
-            const array = posAttr.array;
-            // Only animate if we haven't captured initial positions
-            if (!window._initParticles) {
-                window._initParticles = new Float32Array(array);
-            }
-            const initPos = window._initParticles;
-            for (let i = 0; i < particleCount; i++) {
-                const i3 = i * 3;
-                // Move from scattered to centered as scroll progresses
-                const targetX = initPos[i3] * (1 - scrollProgress * 0.7);
-                const targetY = initPos[i3 + 1] * (1 - scrollProgress * 0.5) + 0.8;
-                const targetZ = initPos[i3 + 2] * (1 - scrollProgress * 0.7);
-                array[i3] += (targetX - array[i3]) * 0.02;
-                array[i3 + 1] += (targetY - array[i3 + 1]) * 0.02;
-                array[i3 + 2] += (targetZ - array[i3 + 2]) * 0.02;
-            }
-            posAttr.needsUpdate = true;
-
-            // 4. Keyboard floating (phase 0.3 - 0.7)
-            const kbFloat = Math.max(0, (scrollProgress - 0.2) * 2);
-            keyGroup.position.y = -0.35 + kbFloat * 0.5;
-            keyGroup.rotation.x = kbFloat * 0.2;
-            keyGroup.rotation.z = kbFloat * 0.1;
-
-            // 5. Rings spin & glow (phase 0.4 - 0.8)
-            const ringPhase = Math.max(0, (scrollProgress - 0.3) * 2.5);
-            ring1.rotation.z = scrollProgress * 2;
-            ring2.rotation.y = scrollProgress * 3;
-            ring3.rotation.x = scrollProgress * 1.5;
-            ringMat.opacity = 0.1 + ringPhase * 0.5;
-            ringMat2.opacity = 0.1 + ringPhase * 0.4;
-            ringMat3.opacity = 0.05 + ringPhase * 0.3;
-            ring1.scale.set(1 + ringPhase * 0.5, 1 + ringPhase * 0.5, 1 + ringPhase * 0.5);
-            ring2.scale.set(1 + ringPhase * 0.4, 1 + ringPhase * 0.4, 1 + ringPhase * 0.4);
-            ring3.scale.set(1 + ringPhase * 0.6, 1 + ringPhase * 0.6, 1 + ringPhase * 0.6);
-
-            // 6. Logo Reveal (phase 0.7 - 1.0)
-            const logoPhase = Math.max(0, (scrollProgress - 0.65) * 4);
-            if (logoPhase > 0.1) {
-                logoGroup.visible = true;
-                logoGroup.scale.set(logoPhase, logoPhase, logoPhase);
-                logoGroup.rotation.y = scrollProgress * 2;
-                // Fade screen and rings to let logo shine
-                screenMat.emissiveIntensity = 2.0 - logoPhase * 1.5;
-                ringMat.opacity = 0.5 - logoPhase * 0.5;
-                ringMat2.opacity = 0.4 - logoPhase * 0.4;
-                ringMat3.opacity = 0.3 - logoPhase * 0.3;
-                // Glow sphere
-                glowSphere.material.opacity = 0.1 + logoPhase * 0.3;
-                glowSphere.scale.set(1 + logoPhase, 1 + logoPhase, 1 + logoPhase);
-            } else {
-                logoGroup.visible = false;
-            }
-
-            // 7. Mouse moves
-            mouse.position.x = 1.5 + Math.sin(scrollProgress * 10) * 0.2;
-            mouse.position.z = 0.1 + Math.cos(scrollProgress * 8) * 0.1;
         }
 
-        // --- INTERSECTION OBSERVER FOR TEXT SECTIONS (Fade in) ---
-        const sections = document.querySelectorAll('.section');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, { threshold: 0.2 });
-        sections.forEach(s => observer.observe(s));
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // CONTENT PANEL
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let panelTimeout = null;
 
-        // --- WINDOW EVENTS ---
-        window.addEventListener('scroll', updateScroll);
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        function updatePanel(index) {
+            const s = SECTORS[index];
+            if (!s) return;
 
-        // --- ANIMATION LOOP ---
+            panelTag.textContent = `SECTOR ${index} · ${s.name.toUpperCase()}`;
+            panelTitle.textContent = s.name;
+
+            // Color the title
+            const color = new THREE.Color(s.color);
+            panelTitle.style.background =
+                `linear-gradient(135deg, ${s.color} 20%, ${color.clone().lerp(new THREE.Color(0xffffff), 0.3).getStyle()})`;
+            panelTitle.style.webkitBackgroundClip = 'text';
+            panelTitle.style.webkitTextFillColor = 'transparent';
+            panelTitle.style.backgroundClip = 'text';
+
+            panelDesc.textContent = s.desc;
+
+            panelTags.innerHTML = '';
+            if (s.tags && s.tags.length) {
+                s.tags.forEach(tag => {
+                    const span = document.createElement('span');
+                    span.textContent = tag;
+                    if (['Innovation', 'Excellence', 'Future-ready'].includes(tag)) {
+                        span.classList.add('highlight');
+                    }
+                    panelTags.appendChild(span);
+                });
+            }
+
+            // Show with a slight delay for smooth transitions
+            clearTimeout(panelTimeout);
+            panel.classList.remove('visible');
+            panelTimeout = setTimeout(() => {
+                panel.classList.add('visible');
+            }, 50);
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ANIMATION LOOP
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const clock = new THREE.Clock();
+
         function animate() {
             requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+            const dt = Math.min(clock.getDelta(), 0.05);
 
-            // Auto-rotate the entire scene slightly even when not scrolling? No, let scroll control it.
-            // But we add some idle floating motion to particles.
-            if (!window._time) window._time = 0;
-            window._time += 0.01;
+            // ── Smooth camera ──
+            currentCameraZ += (targetCameraZ - currentCameraZ) * 0.07;
+            camera.position.z = currentCameraZ;
 
-            // Idle rotation if scroll is near 0
-            if (scrollProgress < 0.1) {
-                computerGroup.rotation.y += 0.001;
+            // Slight camera bob
+            const bob = Math.sin(t * 0.15) * 0.08;
+            camera.position.y = 1.2 + bob;
+
+            // Look slightly ahead
+            const lookTarget = new THREE.Vector3(0, 0, currentCameraZ - 8);
+            camera.lookAt(lookTarget);
+
+            // ── Sun pulse ──
+            const pulse = 1 + Math.sin(t * 0.6) * 0.04;
+            sun.scale.set(pulse, pulse, pulse);
+            sunMat.emissiveIntensity = 2.2 + Math.sin(t * 0.7) * 0.4;
+
+            // ── Planets rotate & orbit ──
+            planets.forEach((p, i) => {
+                p.mesh.rotation.y += p.rotSpeed * dt * 8;
+                p.mesh.rotation.x += p.rotSpeed * dt * 2;
+                p.ring.rotation.x += p.rotSpeed * dt * 3;
+                p.ring.rotation.z += p.rotSpeed * dt * 2;
+
+                // Tiny orbit wobble
+                const wobble = Math.sin(t * p.orbitSpeed + p.orbitOffset) * 0.12;
+                const wobbleX = Math.cos(t * p.orbitSpeed * 0.7 + p.orbitOffset) * 0.08;
+                p.mesh.position.x = p.basePos.x + wobbleX;
+                p.mesh.position.y = p.basePos.y + wobble * 0.5;
+                p.ring.position.copy(p.mesh.position);
+
+                // Label follows
+                if (p.mesh.userData.label) {
+                    const lbl = p.mesh.userData.label;
+                    lbl.position.x = p.mesh.position.x;
+                    lbl.position.y = p.mesh.position.y + p.sector.radius + 1.2;
+                    lbl.position.z = p.mesh.position.z;
+
+                    // Label fade based on distance
+                    const dist = Math.abs(p.mesh.position.z - currentCameraZ);
+                    const alpha = Math.min(1, Math.max(0, 1 - (dist - 2) / 12));
+                    lbl.element.style.opacity = alpha;
+                    lbl.element.style.transform = `scale(${0.7 + alpha * 0.3})`;
+                }
+            });
+
+            // ── Dust drift ──
+            const dustPosAttr = dust.geometry.attributes.position;
+            const dPos = dustPosAttr.array;
+            for (let i = 0; i < dustCount; i++) {
+                dPos[i * 3] += dustVel[i].x;
+                dPos[i * 3 + 1] += dustVel[i].y;
+                dPos[i * 3 + 2] += dustVel[i].z;
+                if (dPos[i * 3] > 40) dPos[i * 3] = -40;
+                if (dPos[i * 3] < -40) dPos[i * 3] = 40;
+                if (dPos[i * 3 + 1] > 15) dPos[i * 3 + 1] = -15;
+                if (dPos[i * 3 + 1] < -15) dPos[i * 3 + 1] = 15;
+                if (dPos[i * 3 + 2] > 20) dPos[i * 3 + 2] = -60;
+                if (dPos[i * 3 + 2] < -60) dPos[i * 3 + 2] = 20;
             }
+            dustPosAttr.needsUpdate = true;
 
-            // Mouse idle hover
-            mouse.position.y = -0.4 + Math.sin(window._time * 2) * 0.02;
+            // ── Stars subtle rotation ──
+            stars.rotation.y += dt * 0.008;
 
-            renderer.render(scene, camera);
+            // ── Render ──
+            composer.render();
+            labelRenderer.render(scene, camera);
         }
 
-        // Initial call to set state
-        setTimeout(() => {
-            updateScroll();
-        }, 100);
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // RESIZE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function onResize() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            labelRenderer.setSize(w, h);
+            composer.setSize(w, h);
+            bloomPass.resolution.set(w, h);
+        }
 
+        window.addEventListener('resize', onResize);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // SCROLL LISTENER
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        window.addEventListener('scroll', updateScroll, { passive: true });
+        window.addEventListener('load', () => {
+            // Initial update after layout
+            setTimeout(updateScroll, 100);
+        });
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // KEYBOARD NAV
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                jumpToSector(activeSector + 1);
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                jumpToSector(activeSector - 1);
+            } else if (e.key >= '1' && e.key <= '6') {
+                const idx = parseInt(e.key) - 1;
+                if (idx < SECTOR_COUNT) jumpToSector(idx);
+            }
+        });
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // REDUCED MOTION
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            document.querySelectorAll('.dot, .nav-links a').forEach(el => {
+                el.style.transition = 'none';
+            });
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // START
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         animate();
+        updateScroll();
 
-        console.log('🚀 iMENA Tech 3D Universe Loaded.');
-        console.log('💻 Built for the best developers in the world.');
+        console.log('🌌 iMENA Tech 3D Universe — Scroll to explore!');
     </script>
 </body>
 </html>
