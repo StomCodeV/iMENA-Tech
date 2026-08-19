@@ -1,1048 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>iMENA Tech — 3D Universe</title>
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Fira+Code&display=swap" rel="stylesheet" />
-
-    <style>
-        /* ————— Reset & Base ————— */
-        *,
-        *::before,
-        *::after {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #000004;
-            color: #fff;
-            overflow-x: hidden;
-            overflow-y: scroll;
-            height: 100vh;
-            scrollbar-width: none;
-            /* Firefox */
-        }
-
-        body::-webkit-scrollbar {
-            display: none;
-        }
-
-        /* ————— Scroll Container ————— */
-        #scroll-container {
-            height: 600vh;
-            /* 6 sectors × 100vh */
-            position: relative;
-            pointer-events: none;
-        }
-
-        /* ————— Three.js Canvas ————— */
-        #three-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        /* ————— Fixed Navbar ————— */
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            padding: 18px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
-            background: rgba(0, 0, 4, 0.55);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-            pointer-events: auto;
-            transition: background 0.3s;
-        }
-
-        .navbar .logo {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: -0.3px;
-            background: linear-gradient(135deg, #ff8844, #ff6b35);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .navbar .logo span {
-            font-weight: 300;
-            color: rgba(255, 255, 255, 0.4);
-            -webkit-text-fill-color: rgba(255, 255, 255, 0.4);
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 24px;
-            list-style: none;
-            font-size: 13px;
-            font-weight: 450;
-            letter-spacing: 0.2px;
-        }
-
-        .nav-links a {
-            color: rgba(255, 255, 255, 0.5);
-            text-decoration: none;
-            transition: color 0.25s, transform 0.2s;
-            cursor: pointer;
-            padding: 4px 0;
-            border-bottom: 2px solid transparent;
-        }
-
-        .nav-links a:hover {
-            color: #fff;
-        }
-        .nav-links a.active {
-            color: #fff;
-            border-bottom-color: #ff8844;
-        }
-
-        /* ————— Sidebar Dots ————— */
-        .sidebar-dots {
-            position: fixed;
-            right: 24px;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 90;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            pointer-events: auto;
-        }
-
-        .sidebar-dots .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-            cursor: pointer;
-            position: relative;
-        }
-
-        .sidebar-dots .dot.active {
-            background: #ff8844;
-            border-color: #ff8844;
-            box-shadow: 0 0 16px rgba(255, 136, 68, 0.35);
-            transform: scale(1.3);
-        }
-
-        .sidebar-dots .dot .dot-tooltip {
-            position: absolute;
-            right: 22px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(0, 0, 4, 0.8);
-            backdrop-filter: blur(8px);
-            padding: 4px 14px;
-            border-radius: 6px;
-            font-size: 11px;
-            color: #fff;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .sidebar-dots .dot:hover .dot-tooltip {
-            opacity: 1;
-        }
-
-        .sidebar-dots .dot .dot-tooltip::after {
-            content: '';
-            position: absolute;
-            right: -6px;
-            top: 50%;
-            transform: translateY(-50%);
-            border-left: 6px solid rgba(0, 0, 4, 0.8);
-            border-top: 6px solid transparent;
-            border-bottom: 6px solid transparent;
-        }
-
-        /* ————— Scroll Progress Bar ————— */
-        .scroll-progress {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            height: 3px;
-            z-index: 100;
-            background: linear-gradient(90deg, #ff6b35, #ff8844, #ffd93d, #a78bfa, #6bcbff);
-            width: 0%;
-            transition: width 0.08s linear;
-            border-radius: 0 3px 3px 0;
-            box-shadow: 0 0 20px rgba(255, 136, 68, 0.2);
-        }
-
-        /* ————— Scroll Hint ————— */
-        .scroll-hint {
-            position: fixed;
-            bottom: 48px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 50;
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 13px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            animation: floatHint 2.4s ease-in-out infinite;
-            pointer-events: none;
-            transition: opacity 0.8s ease;
-            font-weight: 300;
-        }
-
-        .scroll-hint.hidden {
-            opacity: 0;
-        }
-
-        @keyframes floatHint {
-            0%,
-            100% {
-                transform: translateX(-50%) translateY(0);
-            }
-            50% {
-                transform: translateX(-50%) translateY(-8px);
-            }
-        }
-
-        /* ————— Glass Content Panel ————— */
-        .content-panel {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%) scale(0.92);
-            z-index: 40;
-            max-width: 640px;
-            width: 90%;
-            padding: 32px 40px;
-            background: rgba(0, 0, 4, 0.55);
-            backdrop-filter: blur(24px) saturate(1.2);
-            -webkit-backdrop-filter: blur(24px) saturate(1.2);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-            opacity: 0;
-            transition: opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-                transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-            pointer-events: none;
-            text-align: center;
-        }
-
-        .content-panel.visible {
-            opacity: 1;
-            transform: translateX(-50%) scale(1);
-            pointer-events: auto;
-        }
-
-        .content-panel .panel-tag {
-            display: inline-block;
-            font-size: 11px;
-            font-weight: 500;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            padding: 4px 16px;
-            border-radius: 40px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            color: rgba(255, 255, 255, 0.4);
-            margin-bottom: 12px;
-        }
-
-        .content-panel .panel-title {
-            font-size: 28px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #fff 30%, rgba(255, 255, 255, 0.5));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .content-panel .panel-desc {
-            font-size: 15px;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 16px;
-            font-weight: 350;
-        }
-
-        .content-panel .panel-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-        }
-
-        .content-panel .panel-tags span {
-            font-family: 'Fira Code', monospace;
-            font-size: 12px;
-            padding: 4px 14px;
-            border-radius: 40px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            color: rgba(255, 255, 255, 0.5);
-            letter-spacing: 0.2px;
-        }
-
-        .content-panel .panel-tags span.highlight {
-            background: rgba(255, 136, 68, 0.12);
-            border-color: rgba(255, 136, 68, 0.2);
-            color: #ff8844;
-        }
-
-        /* ————— Responsive ————— */
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 14px 20px;
-            }
-            .navbar .logo {
-                font-size: 17px;
-            }
-            .nav-links {
-                gap: 14px;
-                font-size: 11px;
-            }
-            .nav-links a {
-                padding: 2px 0;
-            }
-            .sidebar-dots {
-                right: 14px;
-                gap: 12px;
-            }
-            .sidebar-dots .dot {
-                width: 8px;
-                height: 8px;
-            }
-            .content-panel {
-                bottom: 80px;
-                padding: 24px 24px;
-                max-width: 92%;
-            }
-            .content-panel .panel-title {
-                font-size: 22px;
-            }
-            .content-panel .panel-desc {
-                font-size: 14px;
-            }
-            .scroll-hint {
-                font-size: 11px;
-                bottom: 32px;
-            }
-            .sidebar-dots .dot .dot-tooltip {
-                display: none;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .navbar {
-                padding: 12px 16px;
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-            .navbar .logo {
-                font-size: 15px;
-            }
-            .nav-links {
-                gap: 10px;
-                font-size: 10px;
-                flex-wrap: wrap;
-            }
-            .content-panel {
-                bottom: 64px;
-                padding: 20px 18px;
-            }
-            .content-panel .panel-title {
-                font-size: 19px;
-            }
-            .content-panel .panel-desc {
-                font-size: 13px;
-            }
-            .content-panel .panel-tags span {
-                font-size: 10px;
-                padding: 3px 10px;
-            }
-        }
-
-        /* ————— Reduced Motion ————— */
-        @media (prefers-reduced-motion: reduce) {
-            *,
-            *::before,
-            *::after {
-                animation-duration: 0.01ms !important;
-                transition-duration: 0.01ms !important;
-            }
-            .scroll-hint {
-                animation: none;
-            }
-            .content-panel {
-                transition: opacity 0.2s ease, transform 0.2s ease;
-            }
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#070b13">
+  <meta name="description" content="iMENA Tech — EdTech innovation studio building digital learning ecosystems in Rwanda.">
+  <title>iMENA Tech</title>
+  <style>
+    :root{--bg:#070b13;--ink:#edf6ff;--muted:#8b9caf;--line:rgba(185,220,255,.15);--cyan:#68e4e0;--lime:#d4ff69;--orange:#ff9d68;--purple:#a88cff;--ease:cubic-bezier(.2,.8,.2,1)}
+    *{box-sizing:border-box;margin:0}html{scroll-behavior:smooth;background:var(--bg)}body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);overflow-x:hidden;line-height:1.5}
+    a{color:inherit;text-decoration:none}.noise,.aurora,.stars{position:fixed;inset:0;pointer-events:none}.noise{z-index:4;opacity:.06;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");mix-blend-mode:screen}.aurora{z-index:0;background:radial-gradient(ellipse at 15% 10%,rgba(104,228,224,.16),transparent 38%),radial-gradient(ellipse at 85% 52%,rgba(168,140,255,.15),transparent 42%),radial-gradient(ellipse at 45% 100%,rgba(212,255,105,.1),transparent 40%);filter:blur(32px);animation:aurora 18s ease-in-out infinite alternate}.stars{z-index:0;background-image:radial-gradient(rgba(255,255,255,.7) 1px,transparent 1px),radial-gradient(rgba(104,228,224,.5) 1px,transparent 1px);background-size:77px 77px,137px 137px;background-position:10px 20px,40px 80px;opacity:.25;animation:drift 40s linear infinite}
+    #space{position:fixed;z-index:1;inset:0;width:100%;height:100%;pointer-events:none}
+    .wrap{position:relative;z-index:5;width:min(1180px,calc(100% - 48px));margin:auto}.eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);font-weight:700}.eyebrow:before{content:"";display:inline-block;width:28px;height:1px;vertical-align:middle;background:currentColor;margin-right:12px}.nav{height:86px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:10}.logo{font-size:13px;font-weight:900;letter-spacing:.12em;display:flex;align-items:center;gap:9px}.logo-mark{width:28px;height:28px;border:1px solid var(--cyan);display:grid;place-items:center;transform:rotate(45deg);box-shadow:0 0 20px rgba(104,228,224,.22)}.logo-mark span{transform:rotate(-45deg);font-size:12px;color:var(--cyan)}.navlinks{display:flex;gap:28px;color:var(--muted);font-size:12px}.navlinks a{transition:.3s}.navlinks a:hover{color:var(--ink)}.nav-cta{border:1px solid var(--line);padding:10px 15px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;transition:.3s}.nav-cta:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px)}
+    .hero{min-height:calc(100vh - 86px);display:grid;grid-template-columns:1.06fr .94fr;align-items:center;gap:60px;padding:55px 0 105px}.hero-copy{position:relative}.hero h1{font-size:clamp(4rem,9.2vw,8.5rem);line-height:.82;letter-spacing:-.09em;margin:24px 0 29px;max-width:760px}.hero h1 em{font-style:normal;color:transparent;-webkit-text-stroke:1px rgba(237,246,255,.65)}.hero-desc{color:var(--muted);max-width:470px;font-size:16px}.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px}.btn{padding:14px 19px;border:1px solid var(--line);font-size:11px;text-transform:uppercase;letter-spacing:.14em;display:inline-flex;align-items:center;gap:12px;transition:.35s var(--ease)}.btn-primary{background:var(--lime);border-color:var(--lime);color:#111a13;font-weight:800}.btn:hover{transform:translateY(-4px);box-shadow:0 15px 35px rgba(0,0,0,.25)}.btn-primary:hover{background:#e8ffa4}.micro{display:flex;gap:24px;margin-top:50px;color:var(--muted);font-size:11px}.micro strong{color:var(--ink);display:block;font-size:19px;letter-spacing:-.04em}
+    .orbital{height:520px;position:relative;perspective:1100px;transform-style:preserve-3d}.orbital:before{content:"";position:absolute;inset:13%;border:1px solid rgba(104,228,224,.25);border-radius:50%;transform:rotateX(68deg) rotateZ(25deg);box-shadow:0 0 90px rgba(104,228,224,.08),inset 0 0 60px rgba(104,228,224,.08);animation:orbit 13s linear infinite}.orbital:after{content:"";position:absolute;inset:22%;border:1px dashed rgba(212,255,105,.28);border-radius:50%;transform:rotateY(68deg) rotateZ(-25deg);animation:orbit2 17s linear infinite}.orb-core{position:absolute;top:50%;left:50%;width:190px;height:190px;transform:translate(-50%,-50%) rotateX(12deg) rotateY(-18deg);transform-style:preserve-3d;animation:float 6s ease-in-out infinite;filter:drop-shadow(0 20px 45px rgba(104,228,224,.24))}.orb-core:before,.orb-core:after{content:"";position:absolute;inset:0;border-radius:31% 69% 63% 37%/42% 38% 62% 58%;background:linear-gradient(135deg,rgba(104,228,224,.8),rgba(95,79,208,.45) 45%,rgba(7,11,19,.85));border:1px solid rgba(255,255,255,.6);box-shadow:inset 22px 20px 50px rgba(255,255,255,.22),inset -25px -30px 40px rgba(0,0,0,.5)}.orb-core:after{inset:17px;transform:translateZ(30px);background:radial-gradient(circle at 35% 25%,#f8ffff 0 3%,transparent 4%),linear-gradient(135deg,rgba(212,255,105,.7),rgba(104,228,224,.15));border-radius:55% 45% 34% 66%}.orbit-dot{position:absolute;width:12px;height:12px;background:var(--lime);border-radius:50%;box-shadow:0 0 25px var(--lime);top:22%;left:23%;animation:dot 7s ease-in-out infinite}.orbit-label{position:absolute;right:2%;top:16%;font-size:10px;letter-spacing:.18em;color:var(--muted);transform:rotate(90deg)}.orbit-label b{color:var(--cyan)}
+    section{padding:120px 0;position:relative}.section-head{display:flex;justify-content:space-between;gap:40px;align-items:end;margin-bottom:48px}.section-head h2{font-size:clamp(2.5rem,6vw,5.7rem);line-height:.9;letter-spacing:-.08em;margin-top:17px}.section-head h2 em{font-style:normal;color:var(--cyan)}.section-note{max-width:285px;color:var(--muted);font-size:13px}.glass{background:linear-gradient(130deg,rgba(20,31,48,.72),rgba(12,16,29,.43));border:1px solid var(--line);backdrop-filter:blur(15px);box-shadow:0 25px 90px rgba(0,0,0,.24)}
+    .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.about-card{padding:34px;min-height:330px;position:relative;overflow:hidden}.about-card:first-child{background:linear-gradient(130deg,rgba(104,228,224,.13),rgba(10,18,30,.6))}.about-card h3{font-size:24px;letter-spacing:-.05em;margin:24px 0 12px}.about-card p{color:var(--muted);font-size:14px;max-width:420px}.big-number{position:absolute;right:25px;bottom:-27px;font-size:180px;line-height:1;font-weight:900;color:rgba(104,228,224,.07);letter-spacing:-.12em}.ring-icon{width:66px;height:66px;border:1px solid var(--cyan);border-radius:50%;display:grid;place-items:center;color:var(--cyan);font-size:22px;box-shadow:0 0 25px rgba(104,228,224,.15)}.pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:27px}.pill{font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:8px 10px;border:1px solid var(--line);color:#c5d1de}.pill:hover{border-color:var(--lime);color:var(--lime)}
+    .services-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.service-card{padding:34px;transition:transform .3s var(--ease),border-color .3s}.service-card:hover{border-color:rgba(104,228,224,.5);transform:translateY(-6px)}.service-card .icon{font-size:28px;margin-bottom:12px;display:block}.service-card h3{font-size:22px;letter-spacing:-.04em;margin-bottom:8px}.service-card p{color:var(--muted);font-size:14px;line-height:1.6}.service-card .pill-row{margin-top:16px;gap:6px}
+    .projects{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}.project{min-height:360px;padding:25px;position:relative;overflow:hidden;transform-style:preserve-3d;transition:transform .55s var(--ease),border-color .3s}.project:hover{border-color:rgba(104,228,224,.6);transform:translateY(-9px) rotateX(2deg) rotateY(-2deg)}.project:nth-child(1){grid-column:span 6;background:linear-gradient(140deg,rgba(52,91,105,.58),rgba(18,24,43,.65))}.project:nth-child(2){grid-column:span 6;background:linear-gradient(140deg,rgba(72,56,120,.5),rgba(18,24,43,.7))}.project:nth-child(3){grid-column:span 4;background:linear-gradient(140deg,rgba(104,86,35,.38),rgba(18,24,43,.7))}.project:nth-child(4){grid-column:span 4;background:linear-gradient(140deg,rgba(33,83,62,.48),rgba(18,24,43,.7))}.project:nth-child(5){grid-column:span 4;background:linear-gradient(140deg,rgba(88,44,105,.45),rgba(18,24,43,.7))}.project:nth-child(6){grid-column:span 4;background:linear-gradient(140deg,rgba(45,78,98,.5),rgba(18,24,43,.7))}.project:nth-child(7){grid-column:span 4;background:linear-gradient(140deg,rgba(30,70,50,.45),rgba(18,24,43,.7))}.project:nth-child(8){grid-column:span 4;background:linear-gradient(140deg,rgba(70,40,80,.5),rgba(18,24,43,.7))}.project-top{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercase}.project h3{font-size:clamp(22px,2.8vw,36px);line-height:.9;letter-spacing:-.07em;max-width:280px;margin-top:105px}.project p{color:#a9b7c4;font-size:12px;max-width:280px;margin-top:16px}.project-arrow{position:absolute;right:23px;bottom:22px;width:42px;height:42px;border:1px solid var(--line);display:grid;place-items:center;font-size:18px;transition:.3s}.project:hover .project-arrow{background:var(--lime);color:#0b1110;border-color:var(--lime);transform:rotate(-45deg)}.project-art{position:absolute;right:22px;top:66px;width:120px;height:78px;opacity:.8;transform:rotate(-12deg);border:1px solid rgba(255,255,255,.25);background:linear-gradient(135deg,rgba(104,228,224,.22),transparent);box-shadow:12px 12px 0 rgba(104,228,224,.08),24px 24px 0 rgba(104,228,224,.04);transform-style:preserve-3d}.project-art:after{content:"";position:absolute;inset:18px 25px;border:1px solid var(--cyan);transform:translateZ(25px) rotate(25deg)}.project:nth-child(2) .project-art{border-radius:50%;width:100px;height:100px;box-shadow:inset 0 0 25px var(--purple),0 0 28px rgba(168,140,255,.4)}.project:nth-child(2) .project-art:after{border-color:var(--purple);border-radius:50%}.project:nth-child(3) .project-art{transform:rotate(30deg);border-color:var(--orange)}.project:nth-child(3) .project-art:after{border-color:var(--orange)}.project:nth-child(4) .project-art{background:repeating-linear-gradient(0deg,transparent 0 9px,rgba(212,255,105,.25) 10px),repeating-linear-gradient(90deg,transparent 0 14px,rgba(212,255,105,.25) 15px);border-color:var(--lime)}.project:nth-child(5) .project-art{border-radius:50% 0 50% 0;background:rgba(168,140,255,.2)}.project:nth-child(6) .project-art{transform:rotate(12deg);border-color:var(--cyan)}.project:nth-child(7) .project-art{transform:rotate(-12deg);border-color:var(--lime)}.project:nth-child(8) .project-art{border-radius:0 50% 0 50%;border-color:var(--orange)}
+    .stack{display:grid;grid-template-columns:1fr 1fr;gap:18px}.stack-card{padding:25px;min-height:210px}.stack-card h3{font-size:19px;letter-spacing:-.04em;margin:22px 0 14px}.stack-card p{font-size:12px;color:var(--muted)}.stack-icon{color:var(--lime);font-size:22px}.skillbar{margin-top:25px;height:3px;background:rgba(255,255,255,.12)}.skillbar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--lime));width:var(--w);box-shadow:0 0 12px var(--cyan)}
+    .timeline{border-left:1px solid var(--line);margin-left:9px}.event{padding:0 0 42px 33px;position:relative}.event:before{content:"";position:absolute;left:-5px;top:5px;width:9px;height:9px;background:var(--lime);box-shadow:0 0 17px var(--lime);border-radius:50%}.event small{color:var(--cyan);font-size:10px;text-transform:uppercase;letter-spacing:.16em}.event h3{font-size:22px;letter-spacing:-.05em;margin:9px 0}.event p{font-size:13px;color:var(--muted);max-width:570px}
+    .contact{padding:42px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;background:linear-gradient(120deg,rgba(104,228,224,.12),rgba(168,140,255,.08),rgba(212,255,105,.08))}.contact h2{font-size:clamp(2.7rem,6vw,6rem);line-height:.82;letter-spacing:-.09em}.contact h2 span{color:var(--lime)}.contact p{color:var(--muted);font-size:14px;margin:20px 0 25px}.contact-links{display:flex;flex-direction:column;gap:12px}.contact-links a{padding:17px;border:1px solid var(--line);display:flex;justify-content:space-between;font-size:12px;color:#c7d5e1;transition:.3s}.contact-links a:hover{border-color:var(--cyan);color:var(--cyan);padding-left:23px}.footer{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:35px 0 45px;border-top:1px solid var(--line)}
+    .reveal{opacity:0;transform:translateY(30px);transition:opacity .8s var(--ease),transform .8s var(--ease)}.reveal.visible{opacity:1;transform:none}.cursor{display:inline-block;width:9px;height:1em;background:var(--lime);vertical-align:-2px;margin-left:4px;animation:blink 1s step-end infinite}.top{position:fixed;right:22px;bottom:22px;z-index:8;width:42px;height:42px;border:1px solid var(--line);background:rgba(7,11,19,.7);color:var(--cyan);display:grid;place-items:center;opacity:0;pointer-events:none;transition:.3s}.top.show{opacity:1;pointer-events:auto}
+    @keyframes aurora{to{transform:scale(1.15) rotate(4deg)}}@keyframes drift{to{background-position:100px 120px,0 0}}@keyframes orbit{to{transform:rotateX(68deg) rotateZ(385deg)}}@keyframes orbit2{to{transform:rotateY(68deg) rotateZ(-385deg)}}@keyframes float{50%{transform:translate(-50%,-56%) rotateX(18deg) rotateY(20deg)}}@keyframes dot{50%{transform:translate(190px,75px)}}@keyframes blink{50%{opacity:0}}
+    @media(max-width:760px){.wrap{width:min(100% - 30px,560px)}.nav{height:70px}.navlinks{display:none}.nav-cta{padding:9px 11px}.hero{display:block;padding-top:65px}.hero h1{font-size:clamp(3.7rem,18vw,7rem)}.hero-desc{font-size:14px}.orbital{height:370px;margin-top:30px}.orb-core{width:140px;height:140px}.section-head{display:block}.section-note{margin-top:23px}.about-grid,.services-grid,.stack,.contact{grid-template-columns:1fr}.about-card,.service-card{min-height:280px;padding:24px}.projects{display:block}.project{margin-bottom:16px;min-height:310px}.project h3{margin-top:100px}.contact{padding:28px}.footer{display:block;line-height:2}.footer span{display:block}.big-number{font-size:130px}section{padding:85px 0}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+  </style>
 </head>
 <body>
-
-    <!-- Scroll Container (drives camera) -->
-    <div id="scroll-container"></div>
-
-    <!-- Three.js Canvas -->
-    <div id="three-canvas"></div>
-
-    <!-- Fixed Navbar -->
-    <nav class="navbar" id="navbar">
-        <div class="logo">iMENA <span>Tech</span></div>
-        <ul class="nav-links" id="navLinks">
-            <li><a data-sector="0">Origin</a></li>
-            <li><a data-sector="1">Websites</a></li>
-            <li><a data-sector="2">Web Apps</a></li>
-            <li><a data-sector="3">Systems</a></li>
-            <li><a data-sector="4">AI</a></li>
-            <li><a data-sector="5">Hub</a></li>
-        </ul>
+  <div class="aurora"></div><div class="stars"></div><canvas id="space"></canvas><div class="noise"></div>
+  <div class="wrap">
+    <nav class="nav">
+      <a class="logo" href="#home"><span class="logo-mark"><span>✦</span></span> iMENA Tech</a>
+      <div class="navlinks">
+        <a href="#services">Services</a>
+        <a href="#hub">Hub</a>
+        <a href="#projects">Projects</a>
+        <a href="#journey">Journey</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <a class="nav-cta" href="mailto:tuyisengejeanchrisostome@gmail.com">Start a conversation ↗</a>
     </nav>
-
-    <!-- Sidebar Dots -->
-    <div class="sidebar-dots" id="sidebarDots"></div>
-
-    <!-- Scroll Progress -->
-    <div class="scroll-progress" id="scrollProgress"></div>
-
-    <!-- Scroll Hint -->
-    <div class="scroll-hint" id="scrollHint">⬇ Scroll to explore</div>
-
-    <!-- Glass Content Panel -->
-    <div class="content-panel" id="contentPanel">
-        <div class="panel-tag" id="panelTag">SECTOR</div>
-        <div class="panel-title" id="panelTitle">Origin</div>
-        <div class="panel-desc" id="panelDesc">Welcome to the iMENA Tech universe.</div>
-        <div class="panel-tags" id="panelTags"></div>
-    </div>
-
-    <!-- ————— Three.js ————— -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-
-    <script type="module">
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // IMPORTS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // SECTOR DATA
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const SECTORS = [{
-            id: 0,
-            name: 'Origin',
-            color: '#888888',
-            pos: [0, 0, 0],
-            radius: 0,
-            desc: 'Welcome to the iMENA Tech universe. Scroll to begin your journey.',
-            tags: [],
-            planet: false,
-        }, {
-            id: 1,
-            name: 'Websites',
-            color: '#ff6b35',
-            pos: [1.8, -0.4, -14],
-            radius: 1.0,
-            desc: 'Fast, responsive, SEO-optimized web experiences with premium UX.',
-            tags: ['Next.js', 'Tailwind', 'Vercel', 'SEO'],
-            planet: true,
-        }, {
-            id: 2,
-            name: 'Web Apps',
-            color: '#6bcbff',
-            pos: [-1.4, 0.7, -28],
-            radius: 1.2,
-            desc: 'Interactive portals, dashboards, and SaaS platforms with real-time data.',
-            tags: ['React', 'TypeScript', 'Node.js', 'PostgreSQL'],
-            planet: true,
-        }, {
-            id: 3,
-            name: 'Systems',
-            color: '#ffd93d',
-            pos: [2.0, -0.6, -42],
-            radius: 1.0,
-            desc: 'Enterprise-grade admin tools, management systems, and scalable infrastructure.',
-            tags: ['Prisma', 'Supabase', 'Docker', 'APIs'],
-            planet: true,
-        }, {
-            id: 4,
-            name: 'AI Solutions',
-            color: '#a78bfa',
-            pos: [-1.6, 0.4, -56],
-            radius: 1.3,
-            desc: 'Smart assistants, automated workflows, and predictive analytics.',
-            tags: ['OpenAI', 'LangChain', 'Vector DB', 'RAG'],
-            planet: true,
-        }, {
-            id: 5,
-            name: 'iMENA Hub',
-            color: '#ff8844',
-            pos: [0, 0, -72],
-            radius: 1.6,
-            desc: 'Building a smarter digital future. Websites · Web Apps · Systems · AI.',
-            tags: ['Innovation', 'Excellence', 'Future-ready'],
-            planet: true,
-        }, ];
-
-        const SECTOR_COUNT = SECTORS.length;
-        const PLANET_SECTORS = SECTORS.filter(s => s.planet);
-        const SECTOR_Z = SECTORS.map(s => s.pos[2]);
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // DOM REFS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const container = document.getElementById('three-canvas');
-        const scrollContainer = document.getElementById('scroll-container');
-        const progressBar = document.getElementById('scrollProgress');
-        const sidebarDots = document.getElementById('sidebarDots');
-        const navLinks = document.getElementById('navLinks');
-        const panel = document.getElementById('contentPanel');
-        const panelTag = document.getElementById('panelTag');
-        const panelTitle = document.getElementById('panelTitle');
-        const panelDesc = document.getElementById('panelDesc');
-        const panelTags = document.getElementById('panelTags');
-        const scrollHint = document.getElementById('scrollHint');
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // SETUP SIDEBAR DOTS & NAV
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        SECTORS.forEach((s, i) => {
-            const dot = document.createElement('div');
-            dot.className = 'dot';
-            dot.dataset.index = i;
-            const tip = document.createElement('span');
-            tip.className = 'dot-tooltip';
-            tip.textContent = s.name;
-            dot.appendChild(tip);
-            dot.addEventListener('click', () => jumpToSector(i));
-            sidebarDots.appendChild(dot);
-        });
-
-        document.querySelectorAll('.nav-links a').forEach((a, i) => {
-            a.addEventListener('click', (e) => {
-                e.preventDefault();
-                jumpToSector(i);
-            });
-        });
-
-        function jumpToSector(index) {
-            const clamped = Math.max(0, Math.min(SECTOR_COUNT - 1, index));
-            const progress = clamped / (SECTOR_COUNT - 1);
-            const targetScroll = progress * (scrollContainer.scrollHeight - window.innerHeight);
-            window.scrollTo({ top: targetScroll, behavior: 'smooth' });
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // THREE.JS SCENE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000004);
-        scene.fog = new THREE.Fog(0x000004, 30, 90);
-
-        // Camera
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
-        camera.position.set(0, 1.2, 6);
-        camera.lookAt(0, 0, -10);
-
-        // Renderer
-        const renderer = new THREE.WebGLRenderer({
-            antialias: true,
-            powerPreference: 'high-performance',
-        });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        container.appendChild(renderer.domElement);
-
-        // CSS2 Renderer (labels)
-        const labelRenderer = new CSS2DRenderer();
-        labelRenderer.setSize(window.innerWidth, window.innerHeight);
-        labelRenderer.domElement.style.position = 'absolute';
-        labelRenderer.domElement.style.top = '0';
-        labelRenderer.domElement.style.left = '0';
-        labelRenderer.domElement.style.pointerEvents = 'none';
-        container.appendChild(labelRenderer.domElement);
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // POST-PROCESSING
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const composer = new EffectComposer(renderer);
-        const renderPass = new RenderPass(scene, camera);
-        composer.addPass(renderPass);
-
-        const bloomPass = new UnrealBloomPass(
-            new THREE.Vector2(window.innerWidth, window.innerHeight),
-            0.6, // strength
-            0.3, // radius
-            0.1 // threshold
-        );
-        composer.addPass(bloomPass);
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // LIGHTS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const ambientLight = new THREE.AmbientLight(0x222244, 0.6);
-        scene.add(ambientLight);
-
-        const sunLight = new THREE.PointLight(0xff8844, 80, 60);
-        sunLight.position.set(0, 0, 0);
-        scene.add(sunLight);
-
-        const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
-        fillLight.position.set(5, 8, -10);
-        scene.add(fillLight);
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // SUN
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const sunGeo = new THREE.SphereGeometry(2.8, 48, 48);
-        const sunMat = new THREE.MeshStandardMaterial({
-            color: 0xff8844,
-            emissive: 0xff5500,
-            emissiveIntensity: 2.5,
-            roughness: 0.1,
-            metalness: 0.0,
-        });
-        const sun = new THREE.Mesh(sunGeo, sunMat);
-        sun.position.set(0, 0, 0);
-        scene.add(sun);
-
-        // Sun glow sprite
-        const glowTexture = (() => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-            grad.addColorStop(0, 'rgba(255,136,68,1)');
-            grad.addColorStop(0.15, 'rgba(255,100,40,0.8)');
-            grad.addColorStop(0.5, 'rgba(255,60,20,0.3)');
-            grad.addColorStop(1, 'rgba(255,40,10,0)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 256, 256);
-            return new THREE.CanvasTexture(canvas);
-        })();
-
-        const glowSprite = new THREE.Sprite(
-            new THREE.SpriteMaterial({
-                map: glowTexture,
-                transparent: true,
-                blending: THREE.AdditiveBlending,
-                opacity: 0.9,
-                depthWrite: false,
-            })
-        );
-        glowSprite.scale.set(18, 18, 1);
-        sun.add(glowSprite);
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLANETS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const planets = [];
-        const planetMeshes = [];
-
-        PLANET_SECTORS.forEach((s) => {
-            const color = new THREE.Color(s.color);
-            const geo = new THREE.SphereGeometry(s.radius, 48, 48);
-            const mat = new THREE.MeshStandardMaterial({
-                color: color,
-                emissive: color,
-                emissiveIntensity: 0.15,
-                roughness: 0.35,
-                metalness: 0.2,
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(s.pos[0], s.pos[1], s.pos[2]);
-            mesh.userData.sectorId = s.id;
-            scene.add(mesh);
-            planetMeshes.push(mesh);
-
-            // Ring / glow around planet
-            const ringGeo = new THREE.SphereGeometry(s.radius * 1.35, 32, 32);
-            const ringMat = new THREE.MeshBasicMaterial({
-                color: color,
-                transparent: true,
-                opacity: 0.08,
-                wireframe: true,
-                depthWrite: false,
-            });
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.position.copy(mesh.position);
-            scene.add(ring);
-
-            // Store for animation
-            planets.push({
-                mesh,
-                ring,
-                sector: s,
-                rotSpeed: 0.08 + Math.random() * 0.12,
-                orbitSpeed: 0.02 + Math.random() * 0.03,
-                orbitOffset: Math.random() * Math.PI * 2,
-                basePos: new THREE.Vector3(s.pos[0], s.pos[1], s.pos[2]),
-            });
-
-            // ── CSS2D Label ──
-            const labelDiv = document.createElement('div');
-            labelDiv.textContent = s.name;
-            labelDiv.style.color = '#fff';
-            labelDiv.style.fontFamily = 'Inter, sans-serif';
-            labelDiv.style.fontSize = '15px';
-            labelDiv.style.fontWeight = '500';
-            labelDiv.style.letterSpacing = '0.5px';
-            labelDiv.style.textShadow = '0 0 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.6)';
-            labelDiv.style.background = 'rgba(0,0,4,0.35)';
-            labelDiv.style.backdropFilter = 'blur(6px)';
-            labelDiv.style.padding = '6px 18px';
-            labelDiv.style.borderRadius = '40px';
-            labelDiv.style.border = '1px solid rgba(255,255,255,0.06)';
-            labelDiv.style.pointerEvents = 'none';
-            labelDiv.style.transition = 'opacity 0.4s, transform 0.4s';
-
-            const label = new CSS2DObject(labelDiv);
-            label.position.set(s.pos[0], s.pos[1] + s.radius + 1.2, s.pos[2]);
-            scene.add(label);
-            mesh.userData.label = label;
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // STARS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const starCount = Math.min(6000, window.innerWidth < 768 ? 3000 : 6000);
-        const starGeo = new THREE.BufferGeometry();
-        const starPos = new Float32Array(starCount * 3);
-        const starSizes = new Float32Array(starCount);
-        const starColors = new Float32Array(starCount * 3);
-
-        for (let i = 0; i < starCount; i++) {
-            const r = 20 + Math.random() * 70;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(2 * Math.random() - 1);
-            starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-            starPos[i * 3 + 1] = r * Math.cos(phi) * 0.4;
-            starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta) - 20;
-            starSizes[i] = 0.5 + Math.random() * 1.5;
-            const c = 0.5 + Math.random() * 0.5;
-            starColors[i * 3] = c;
-            starColors[i * 3 + 1] = c;
-            starColors[i * 3 + 2] = c + Math.random() * 0.2;
-        }
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
-        starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
-
-        const starMat = new THREE.PointsMaterial({
-            size: 0.25,
-            transparent: true,
-            opacity: 0.9,
-            blending: THREE.AdditiveBlending,
-            sizeAttenuation: true,
-            vertexColors: true,
-            depthWrite: false,
-        });
-        const stars = new THREE.Points(starGeo, starMat);
-        scene.add(stars);
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // DUST PARTICLES
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const dustCount = Math.min(2000, window.innerWidth < 768 ? 1000 : 2000);
-        const dustGeo = new THREE.BufferGeometry();
-        const dustPos = new Float32Array(dustCount * 3);
-        const dustSizes = new Float32Array(dustCount);
-        const dustVel = [];
-
-        for (let i = 0; i < dustCount; i++) {
-            dustPos[i * 3] = (Math.random() - 0.5) * 80;
-            dustPos[i * 3 + 1] = (Math.random() - 0.5) * 30;
-            dustPos[i * 3 + 2] = (Math.random() - 0.5) * 80 - 20;
-            dustSizes[i] = 0.03 + Math.random() * 0.08;
-            dustVel.push({
-                x: (Math.random() - 0.5) * 0.002,
-                y: (Math.random() - 0.5) * 0.001,
-                z: (Math.random() - 0.5) * 0.002 - 0.003,
-            });
-        }
-        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
-        dustGeo.setAttribute('size', new THREE.BufferAttribute(dustSizes, 1));
-
-        const dustMat = new THREE.PointsMaterial({
-            color: 0x8899ff,
-            size: 0.08,
-            transparent: true,
-            opacity: 0.3,
-            blending: THREE.AdditiveBlending,
-            sizeAttenuation: true,
-            depthWrite: false,
-        });
-        const dust = new THREE.Points(dustGeo, dustMat);
-        scene.add(dust);
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // SCROLL HANDLING
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        let currentScrollProgress = 0;
-        let targetCameraZ = 6;
-        let currentCameraZ = 6;
-        let activeSector = 0;
-
-        function updateScroll() {
-            const maxScroll = scrollContainer.scrollHeight - window.innerHeight;
-            const scrollY = window.scrollY;
-            const progress = maxScroll > 0 ? scrollY / maxScroll : 0;
-            currentScrollProgress = Math.min(1, Math.max(0, progress));
-
-            // Map progress to camera Z
-            const minZ = 6;
-            const maxZ = SECTOR_Z[SECTOR_Z.length - 1] - 2;
-            targetCameraZ = minZ + (maxZ - minZ) * currentScrollProgress;
-
-            // Update progress bar
-            progressBar.style.width = `${currentScrollProgress * 100}%`;
-
-            // Update active sector
-            const rawIndex = currentScrollProgress * (SECTOR_COUNT - 1);
-            const sectorIndex = Math.round(rawIndex);
-            activeSector = Math.min(SECTOR_COUNT - 1, Math.max(0, sectorIndex));
-
-            // Update dots
-            document.querySelectorAll('.sidebar-dots .dot').forEach((dot, i) => {
-                dot.classList.toggle('active', i === activeSector);
-            });
-
-            // Update nav
-            document.querySelectorAll('.nav-links a').forEach((a, i) => {
-                a.classList.toggle('active', i === activeSector);
-            });
-
-            // Update content panel
-            updatePanel(activeSector);
-
-            // Scroll hint
-            if (currentScrollProgress > 0.05) {
-                scrollHint.classList.add('hidden');
-            } else {
-                scrollHint.classList.remove('hidden');
-            }
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // CONTENT PANEL
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        let panelTimeout = null;
-
-        function updatePanel(index) {
-            const s = SECTORS[index];
-            if (!s) return;
-
-            panelTag.textContent = `SECTOR ${index} · ${s.name.toUpperCase()}`;
-            panelTitle.textContent = s.name;
-
-            // Color the title
-            const color = new THREE.Color(s.color);
-            panelTitle.style.background =
-                `linear-gradient(135deg, ${s.color} 20%, ${color.clone().lerp(new THREE.Color(0xffffff), 0.3).getStyle()})`;
-            panelTitle.style.webkitBackgroundClip = 'text';
-            panelTitle.style.webkitTextFillColor = 'transparent';
-            panelTitle.style.backgroundClip = 'text';
-
-            panelDesc.textContent = s.desc;
-
-            panelTags.innerHTML = '';
-            if (s.tags && s.tags.length) {
-                s.tags.forEach(tag => {
-                    const span = document.createElement('span');
-                    span.textContent = tag;
-                    if (['Innovation', 'Excellence', 'Future-ready'].includes(tag)) {
-                        span.classList.add('highlight');
-                    }
-                    panelTags.appendChild(span);
-                });
-            }
-
-            // Show with a slight delay for smooth transitions
-            clearTimeout(panelTimeout);
-            panel.classList.remove('visible');
-            panelTimeout = setTimeout(() => {
-                panel.classList.add('visible');
-            }, 50);
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ANIMATION LOOP
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const t = clock.getElapsedTime();
-            const dt = Math.min(clock.getDelta(), 0.05);
-
-            // ── Smooth camera ──
-            currentCameraZ += (targetCameraZ - currentCameraZ) * 0.07;
-            camera.position.z = currentCameraZ;
-
-            // Slight camera bob
-            const bob = Math.sin(t * 0.15) * 0.08;
-            camera.position.y = 1.2 + bob;
-
-            // Look slightly ahead
-            const lookTarget = new THREE.Vector3(0, 0, currentCameraZ - 8);
-            camera.lookAt(lookTarget);
-
-            // ── Sun pulse ──
-            const pulse = 1 + Math.sin(t * 0.6) * 0.04;
-            sun.scale.set(pulse, pulse, pulse);
-            sunMat.emissiveIntensity = 2.2 + Math.sin(t * 0.7) * 0.4;
-
-            // ── Planets rotate & orbit ──
-            planets.forEach((p, i) => {
-                p.mesh.rotation.y += p.rotSpeed * dt * 8;
-                p.mesh.rotation.x += p.rotSpeed * dt * 2;
-                p.ring.rotation.x += p.rotSpeed * dt * 3;
-                p.ring.rotation.z += p.rotSpeed * dt * 2;
-
-                // Tiny orbit wobble
-                const wobble = Math.sin(t * p.orbitSpeed + p.orbitOffset) * 0.12;
-                const wobbleX = Math.cos(t * p.orbitSpeed * 0.7 + p.orbitOffset) * 0.08;
-                p.mesh.position.x = p.basePos.x + wobbleX;
-                p.mesh.position.y = p.basePos.y + wobble * 0.5;
-                p.ring.position.copy(p.mesh.position);
-
-                // Label follows
-                if (p.mesh.userData.label) {
-                    const lbl = p.mesh.userData.label;
-                    lbl.position.x = p.mesh.position.x;
-                    lbl.position.y = p.mesh.position.y + p.sector.radius + 1.2;
-                    lbl.position.z = p.mesh.position.z;
-
-                    // Label fade based on distance
-                    const dist = Math.abs(p.mesh.position.z - currentCameraZ);
-                    const alpha = Math.min(1, Math.max(0, 1 - (dist - 2) / 12));
-                    lbl.element.style.opacity = alpha;
-                    lbl.element.style.transform = `scale(${0.7 + alpha * 0.3})`;
-                }
-            });
-
-            // ── Dust drift ──
-            const dustPosAttr = dust.geometry.attributes.position;
-            const dPos = dustPosAttr.array;
-            for (let i = 0; i < dustCount; i++) {
-                dPos[i * 3] += dustVel[i].x;
-                dPos[i * 3 + 1] += dustVel[i].y;
-                dPos[i * 3 + 2] += dustVel[i].z;
-                if (dPos[i * 3] > 40) dPos[i * 3] = -40;
-                if (dPos[i * 3] < -40) dPos[i * 3] = 40;
-                if (dPos[i * 3 + 1] > 15) dPos[i * 3 + 1] = -15;
-                if (dPos[i * 3 + 1] < -15) dPos[i * 3 + 1] = 15;
-                if (dPos[i * 3 + 2] > 20) dPos[i * 3 + 2] = -60;
-                if (dPos[i * 3 + 2] < -60) dPos[i * 3 + 2] = 20;
-            }
-            dustPosAttr.needsUpdate = true;
-
-            // ── Stars subtle rotation ──
-            stars.rotation.y += dt * 0.008;
-
-            // ── Render ──
-            composer.render();
-            labelRenderer.render(scene, camera);
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RESIZE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function onResize() {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            renderer.setSize(w, h);
-            labelRenderer.setSize(w, h);
-            composer.setSize(w, h);
-            bloomPass.resolution.set(w, h);
-        }
-
-        window.addEventListener('resize', onResize);
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // SCROLL LISTENER
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        window.addEventListener('scroll', updateScroll, { passive: true });
-        window.addEventListener('load', () => {
-            // Initial update after layout
-            setTimeout(updateScroll, 100);
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // KEYBOARD NAV
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-                e.preventDefault();
-                jumpToSector(activeSector + 1);
-            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-                e.preventDefault();
-                jumpToSector(activeSector - 1);
-            } else if (e.key >= '1' && e.key <= '6') {
-                const idx = parseInt(e.key) - 1;
-                if (idx < SECTOR_COUNT) jumpToSector(idx);
-            }
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // REDUCED MOTION
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            document.querySelectorAll('.dot, .nav-links a').forEach(el => {
-                el.style.transition = 'none';
-            });
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // START
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        animate();
-        updateScroll();
-
-        console.log('🌌 iMENA Tech 3D Universe — Scroll to explore!');
-    </script>
+    <main id="home">
+      <section class="hero">
+        <div class="hero-copy reveal">
+          <div class="eyebrow">Rwanda · 2026 · EdTech innovation studio</div>
+          <h1>Digital worlds<br><em>for human</em><br>learning.</h1>
+          <p class="hero-desc">iMENA Tech builds practical, beautiful digital tools that empower educators, learners, and communities. We are a Rwandan EdTech studio where education meets innovation.</p>
+          <div class="hero-actions"><a class="btn btn-primary" href="#projects">Explore our work <span>↘</span></a><a class="btn" href="mailto:tuyisengejeanchrisostome@gmail.com">Say hello <span>↗</span></a></div>
+          <div class="micro">
+            <div><strong>44+</strong>student teachers trained</div>
+            <div><strong>08</strong>products launched</div>
+            <div><strong>∞</strong>curiosity</div>
+          </div>
+        </div>
+        <div class="orbital reveal"><div class="orb-core"></div><div class="orbit-dot"></div><div class="orbit-label"><b>SCROLL</b> TO EXPLORE</div></div>
+      </section>
+    </main>
+
+    <!-- About / Founder -->
+    <section id="about">
+      <div class="section-head reveal"><div><div class="eyebrow">01 / the human behind the screen</div><h2>Human first.<br><em>Always.</em></h2></div><p class="section-note">Technology is only interesting when it gives people more confidence, access, and room to create.</p></div>
+      <div class="about-grid">
+        <article class="about-card glass reveal"><div class="ring-icon">✦</div><h3>Teacher mindset,<br>builder’s hands.</h3><p>TUYISENGE Jean Chrisostom — Student Teacher, Web Developer, and founder of iMENA Tech. Final-year Language Education student at TTC Muhanga, building EdTech that actually works.</p><div class="big-number">01</div></article>
+        <article class="about-card glass reveal"><div class="ring-icon">◎</div><h3>Designing for<br>the next classroom.</h3><p>Through iMENA Hub, we help African educators move from “I’m not technical” to “I can build this.” Our work is practical, visual, and made for real people.</p><div class="pill-row"><span class="pill">Kinyarwanda · native</span><span class="pill">English · fluent</span><span class="pill">Français · intermediate</span></div></article>
+      </div>
+    </section>
+
+    <!-- Services -->
+    <section id="services">
+      <div class="section-head reveal"><div><div class="eyebrow">02 / what we build</div><h2>Four pillars<br><em>of digital</em> craft.</h2></div><p class="section-note">From websites to AI — we cover the full spectrum of digital needs with a human‑centred approach.</p></div>
+      <div class="services-grid">
+        <article class="service-card glass reveal"><span class="icon">🌐</span><h3>Websites</h3><p>Fast, responsive, SEO‑optimised web experiences with premium UX. Built with Next.js, Tailwind, Vercel.</p><div class="pill-row"><span class="pill">Next.js</span><span class="pill">Tailwind</span><span class="pill">Vercel</span></div></article>
+        <article class="service-card glass reveal"><span class="icon">⚛️</span><h3>Web Apps</h3><p>Interactive portals, dashboards, and SaaS platforms with real‑time data and seamless workflows. React, TypeScript, Node.js, PostgreSQL.</p><div class="pill-row"><span class="pill">React</span><span class="pill">TypeScript</span><span class="pill">Node.js</span></div></article>
+        <article class="service-card glass reveal"><span class="icon">🏛️</span><h3>Systems</h3><p>Enterprise‑grade admin tools, management systems, and scalable infrastructure. Prisma, Supabase, Docker, APIs.</p><div class="pill-row"><span class="pill">Prisma</span><span class="pill">Supabase</span><span class="pill">Docker</span></div></article>
+        <article class="service-card glass reveal"><span class="icon">🤖</span><h3>AI Solutions</h3><p>Smart assistants, automated workflows, and predictive analytics. OpenAI, LangChain, Vector DB, RAG.</p><div class="pill-row"><span class="pill">OpenAI</span><span class="pill">LangChain</span><span class="pill">RAG</span></div></article>
+      </div>
+    </section>
+
+    <!-- iMENA Hub -->
+    <section id="hub">
+      <div class="section-head reveal"><div><div class="eyebrow">03 / flagship initiative</div><h2>iMENA Hub<br><em>empowers</em> educators.</h2></div><p class="section-note">A Rwandan EdTech initiative training student teachers and equipping schools with practical digital skills.</p></div>
+      <div class="about-grid">
+        <article class="about-card glass reveal"><div class="ring-icon">📚</div><h3>44+ Student Teachers</h3><p>Four core programs covering digital pedagogy, web literacy, AI tools, and classroom tech integration. Founded 2025.</p><div class="pill-row"><span class="pill">EdTech</span><span class="pill">Teacher Training</span><span class="pill">Digital Skills</span></div></article>
+        <article class="about-card glass reveal"><div class="ring-icon">🔗</div><h3>Explore the ecosystem</h3><div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:12px"><a href="https://imena-hub.vercel.app/" target="_blank" class="btn" style="padding:10px 16px;font-size:10px">🚀 iMENA Hub</a><a href="https://imenalearn.vercel.app/" target="_blank" class="btn" style="padding:10px 16px;font-size:10px">📚 iMENA Learn</a></div></article>
+      </div>
+    </section>
+
+    <!-- Projects -->
+    <section id="projects">
+      <div class="section-head reveal"><div><div class="eyebrow">04 / product ecosystem</div><h2>Real tools,<br><em>real impact.</em></h2></div><p class="section-note">A growing constellation of products that solve real problems in education and beyond.</p></div>
+      <div class="projects">
+        <a class="project glass reveal" href="https://imena-cv-builder.vercel.app/" target="_blank"><div class="project-top"><span>01 / CV Builder</span><span>Live</span></div><div class="project-art"></div><h3>iMENA CV Builder</h3><p>ATS‑friendly digital resumes for professionals and students.</p><span class="project-arrow">↗</span></a>
+        <a class="project glass reveal" href="https://imena-hub.vercel.app/" target="_blank"><div class="project-top"><span>02 / Hub</span><span>Live</span></div><div class="project-art"></div><h3>iMENA Hub</h3><p>The central platform for teacher training and EdTech resources.</p><span class="project-arrow">↗</span></a>
+        <a class="project glass reveal" href="https://imenalearn.vercel.app/" target="_blank"><div class="project-top"><span>03 / Learn</span><span>Live</span></div><div class="project-art"></div><h3>iMENA Learn</h3><p>Interactive courses and progress tracking for student teachers.</p><span class="project-arrow">↗</span></a>
+        <a class="project glass reveal" href="https://stomcodev.github.io/IMENA-TRINITY-COLLEGE/" target="_blank"><div class="project-top"><span>04 / Trinity</span><span>Live</span></div><div class="project-art"></div><h3>Trinity College</h3><p>Digital presence for academic excellence and institutional updates.</p><span class="project-arrow">↗</span></a>
+        <a class="project glass reveal" href="https://stomcodev.github.io/ChrisostomAi/" target="_blank"><div class="project-top"><span>05 / AI</span><span>Live</span></div><div class="project-art"></div><h3>ChrisostomAi</h3><p>AI‑powered assistant for research, content, and Q&A.</p><span class="project-arrow">↗</span></a>
+        <a class="project glass reveal" href="https://muhirwa-jacques.vercel.app/" target="_blank"><div class="project-top"><span>06 / Portfolio</span><span>Live</span></div><div class="project-art"></div><h3>Jacques Portfolio</h3><p>Showcasing tech talent and design skills.</p><span class="project-arrow">↗</span></a>
+        <a class="project glass reveal" href="https://stomdevsage.github.io/AfriQuiz/" target="_blank"><div class="project-top"><span>07 / Paperless</span><span>Live</span></div><div class="project-art"></div><h3>Paperless Assessment</h3><p>Sustainable digital exams and instant grading.</p><span class="project-arrow">↗</span></a>
+        <a class="project glass reveal" href="https://stomdevsage.github.io/AfriQuiz/" target="_blank"><div class="project-top"><span>08 / AfriQuiz</span><span>Live</span></div><div class="project-art"></div><h3>AfriQuiz</h3><p>African‑centred quiz ecosystem for play and progress.</p><span class="project-arrow">↗</span></a>
+      </div>
+    </section>
+
+    <!-- Journey -->
+    <section id="journey">
+      <div class="section-head reveal"><div><div class="eyebrow">05 / the long game</div><h2>Still<br><em>becoming.</em></h2></div><p class="section-note">Every milestone is a doorway, not a finish line.</p></div>
+      <div class="timeline reveal">
+        <div class="event"><small>2025 — foundation</small><h3>iMENA Tech founded</h3><p>Born from a vision to make digital skills accessible to every Rwandan educator and learner.</p></div>
+        <div class="event"><small>2025 — first orbit</small><h3>iMENA Hub & iMENA Learn</h3><p>Launched a live digital skills program and trained more than 44 student teachers and youth.</p></div>
+        <div class="event"><small>2026 — shipping</small><h3>Verification, Paperless, AfriQuiz</h3><p>Turning the ideas into real products that help schools move beyond paper and uncertainty.</p></div>
+        <div class="event"><small>next — expansion</small><h3>Every TTC in Rwanda. Then Africa.</h3><p>Building a learning ecosystem that travels further than any single classroom.</p></div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact">
+      <div class="contact glass reveal"><div><div class="eyebrow">06 / open channel</div><h2>Let’s make<br><span>something real.</span></h2><p>Have a school, product, or idea that deserves a better digital home? We’d love to hear the shape of it.</p><a class="btn btn-primary" href="mailto:tuyisengejeanchrisostome@gmail.com">Email iMENA Tech ↗</a></div><div class="contact-links"><a href="https://wa.me/250796717230" target="_blank">WhatsApp <span>↗</span></a><a href="mailto:tuyisengejeanchrisostome@gmail.com">tuyisengejeanchrisostome@gmail.com <span>↗</span></a><a href="#home">Back to the top <span>↑</span></a></div></div>
+    </section>
+
+    <footer class="footer"><span>© 2026 iMENA Tech · TUYISENGE Jean Chrisostom</span><span>Built with curiosity in Rwanda <span style="color:var(--cyan)">◆</span></span></footer>
+  </div>
+  <a class="top" id="top" href="#home">↑</a>
+  <script>
+    const canvas=document.getElementById('space'),ctx=canvas.getContext('2d');let W,H,dpr,particles=[],mx=.5,my=.5,scrollY=0;
+    function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);particles=Array.from({length:Math.min(115,Math.floor(W/10))},()=>({x:Math.random()*W,y:Math.random()*H,z:Math.random(),r:Math.random()*1.7+.25,s:Math.random()*.35+.06}))}resize();addEventListener('resize',resize);addEventListener('pointermove',e=>{mx=e.clientX/W;my=e.clientY/H});
+    function draw(t){ctx.clearRect(0,0,W,H);const cx=W*(.5+(mx-.5)*.08),cy=H*(.52+(my-.5)*.08);particles.forEach(p=>{p.y-=p.s;if(p.y<0)p.y=H;const x=p.x+(mx-.5)*p.z*70,y=p.y+(my-.5)*p.z*40+scrollY*p.z*.04,a=.16+p.z*.55;ctx.beginPath();ctx.fillStyle=`rgba(143,218,224,${a})`;ctx.arc(x,y, p.r*p.z*1.8,0,Math.PI*2);ctx.fill()});ctx.save();ctx.translate(cx,cy);ctx.rotate(t*.00008);ctx.strokeStyle='rgba(104,228,224,.09)';ctx.lineWidth=1;for(let i=0;i<7;i++){ctx.beginPath();ctx.ellipse(0,0,150+i*45,45+i*17, i*.3,0,Math.PI*2);ctx.stroke()}ctx.restore();requestAnimationFrame(draw)}requestAnimationFrame(draw);
+    const observer=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.12});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+    addEventListener('scroll',()=>{scrollY=scrollY=pageYOffset;document.getElementById('top').classList.toggle('show',scrollY>600)});
+    document.querySelectorAll('.project,.about-card,.service-card,.stack-card').forEach(card=>card.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect(),rx=((e.clientY-r.top)/r.height-.5)*-7,ry=((e.clientX-r.left)/r.width-.5)*7;card.style.transform=`translateY(-9px) rotateX(${rx}deg) rotateY(${ry}deg)`}).addEventListener('pointerleave',e=>e.currentTarget.style.transform=''));
+  </script>
 </body>
 </html>
