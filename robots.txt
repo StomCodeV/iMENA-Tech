@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://imena-tech.vercel.app/sitemap.xml
+Sitemap: https://imena-lab.vercel.app/sitemap.xml
