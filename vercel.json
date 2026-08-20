@@ -1,7 +1,22 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
+    {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "dest": "/apple-touch-icon.png"
+    },
+    {
+      "src": "/(.*)\\.(css|js|png|jpg|jpeg|svg|ico|webmanifest|json|xml)$",
+      "dest": "/$1.$2"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
   ],
   "headers": [
     {
